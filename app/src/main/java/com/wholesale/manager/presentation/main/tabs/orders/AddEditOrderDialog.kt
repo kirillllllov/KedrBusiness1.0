@@ -13,7 +13,9 @@ import com.wholesale.manager.domain.model.Batch
 import com.wholesale.manager.domain.model.Order
 import com.wholesale.manager.presentation.common.AppDropdown
 import com.wholesale.manager.presentation.common.AppTextField
+import com.wholesale.manager.presentation.common.DatePickerField
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditOrderDialog(
     editing: Order?,
@@ -27,6 +29,7 @@ fun AddEditOrderDialog(
     var customerPhone by remember { mutableStateOf(editing?.customerPhone ?: "") }
     var customerAddress by remember { mutableStateOf(editing?.customerAddress ?: "") }
     var batchId by remember { mutableStateOf(editing?.batchId ?: availableBatches.firstOrNull()?.id ?: "") }
+    var batchDropdownExpanded by remember { mutableStateOf(false) }
     var quantityKg by remember { mutableStateOf(editing?.quantityKg?.toString() ?: "") }
     var pricePerKg by remember { mutableStateOf(editing?.pricePerKg?.toString() ?: "") }
     var shipmentDate by remember { mutableStateOf(editing?.shipmentDate ?: "") }
@@ -38,6 +41,9 @@ fun AddEditOrderDialog(
     var quantityError by remember { mutableStateOf(false) }
     var priceError by remember { mutableStateOf(false) }
 
+    val selectedBatch = availableBatches.find { it.id == batchId }
+    val availableKg = selectedBatch?.let { it.rawQuantityKg * it.outputPercent / 100.0 }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (editing == null) "Новый заказ" else "Редактировать заказ") },
@@ -46,32 +52,93 @@ fun AddEditOrderDialog(
                 modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                AppTextField(value = customerName, onValueChange = { customerName = it; nameError = false },
-                    label = "Клиент *", isError = nameError, errorText = "Обязательное поле")
-                AppTextField(value = customerPhone, onValueChange = { customerPhone = it; phoneError = false },
+                AppTextField(
+                    value = customerName,
+                    onValueChange = { customerName = it; nameError = false },
+                    label = "Клиент *", isError = nameError, errorText = "Обязательное поле"
+                )
+                AppTextField(
+                    value = customerPhone,
+                    onValueChange = { customerPhone = it; phoneError = false },
                     label = "Телефон *", isError = phoneError, errorText = "Обязательное поле",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
-                AppTextField(value = customerAddress, onValueChange = { customerAddress = it },
-                    label = "Адрес (опц.)")
-                if (availableBatches.isNotEmpty()) {
-                    AppDropdown(
-                        label = "Партия",
-                        selected = batchId,
-                        options = availableBatches.map { it.id to "Партия №${it.number}" },
-                        onSelected = { batchId = it }
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                )
+                AppTextField(
+                    value = customerAddress,
+                    onValueChange = { customerAddress = it },
+                    label = "Адрес (опц.)"
+                )
+
+                ExposedDropdownMenuBox(
+                    expanded = batchDropdownExpanded,
+                    onExpandedChange = { batchDropdownExpanded = it }
+                ) {
+                    val batchDisplay = selectedBatch?.let {
+                        "Партия №${it.number} · ${it.formationDate} · ${batchStatusLabel(it.status)}"
+                    } ?: if (batchId.isBlank()) "Не выбрана" else batchId
+
+                    OutlinedTextField(
+                        value = batchDisplay,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Партия *") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = batchDropdownExpanded)
+                        },
+                        modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
-                } else {
-                    AppTextField(value = batchId, onValueChange = { batchId = it },
-                        label = "ID партии")
+                    ExposedDropdownMenu(
+                        expanded = batchDropdownExpanded,
+                        onDismissRequest = { batchDropdownExpanded = false }
+                    ) {
+                        availableBatches.forEach { batch ->
+                            val outputKg = batch.rawQuantityKg * batch.outputPercent / 100.0
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text("Партия №${batch.number} · ${batchStatusLabel(batch.status)}",
+                                            style = MaterialTheme.typography.bodyMedium)
+                                        Text("${batch.formationDate} · Выход: ${String.format("%.1f", outputKg)} кг · ${batch.outputPercent}%",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.outline)
+                                    }
+                                },
+                                onClick = {
+                                    batchId = batch.id
+                                    batchDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
                 }
-                AppTextField(value = quantityKg, onValueChange = { quantityKg = it; quantityError = false },
+
+                if (availableKg != null) {
+                    Text(
+                        "Доступно: ${String.format("%.1f", availableKg)} кг",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                AppTextField(
+                    value = quantityKg,
+                    onValueChange = { quantityKg = it; quantityError = false },
                     label = "Кол-во (кг) *", isError = quantityError, errorText = "Введите число > 0",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
-                AppTextField(value = pricePerKg, onValueChange = { pricePerKg = it; priceError = false },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                )
+                AppTextField(
+                    value = pricePerKg,
+                    onValueChange = { pricePerKg = it; priceError = false },
                     label = "Цена за кг (₽) *", isError = priceError, errorText = "Введите число > 0",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
-                AppTextField(value = shipmentDate, onValueChange = { shipmentDate = it },
-                    label = "Дата отгрузки (ГГГГ-ММ-ДД, опц.)")
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                )
+
+                DatePickerField(
+                    label = "Дата отгрузки (опц.)",
+                    value = shipmentDate,
+                    onValueChange = { shipmentDate = it }
+                )
+
                 AppDropdown(
                     label = "Доставка",
                     selected = deliveryMethod,
@@ -113,4 +180,10 @@ fun AddEditOrderDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } }
     )
+}
+
+private fun batchStatusLabel(status: String) = when (status) {
+    "ACTIVE" -> "Активна"
+    "SOLD_OUT" -> "Продана"
+    else -> status
 }

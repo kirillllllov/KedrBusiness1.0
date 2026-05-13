@@ -7,58 +7,163 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.wholesale.manager.domain.model.Batch
 import com.wholesale.manager.presentation.common.AppDropdown
 import com.wholesale.manager.presentation.common.AppTextField
+import com.wholesale.manager.presentation.common.DatePickerField
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditBatchDialog(
     editing: Batch?,
+    nextBatchNumber: String,
+    initialPurchasePrice: Double,
+    initialExpensesTotal: Double,
     onDismiss: () -> Unit,
-    onSave: (number: String, formationDate: String, rawQuantityKg: Double,
-             outputPercent: Int, costPrice: Double, optimalPricePerKg: Double?, status: String) -> Unit
+    onSave: (
+        formationDate: String, rawQuantityKg: Double, outputPercent: Int,
+        purchasePrice: Double, expensesTotal: Double, marketPricePerPercent: Double, status: String
+    ) -> Unit
 ) {
-    var number by remember { mutableStateOf(editing?.number ?: "") }
     var formationDate by remember { mutableStateOf(editing?.formationDate ?: "") }
     var rawQuantityKg by remember { mutableStateOf(editing?.rawQuantityKg?.toString() ?: "") }
     var outputPercent by remember { mutableStateOf(editing?.outputPercent?.toString() ?: "") }
-    var costPrice by remember { mutableStateOf(editing?.costPrice?.toString() ?: "") }
-    var optimalPricePerKg by remember { mutableStateOf(editing?.optimalPricePerKg?.toString() ?: "") }
+    var purchasePrice by remember { mutableStateOf(if (initialPurchasePrice > 0) String.format("%.2f", initialPurchasePrice) else "") }
+    var expensesTotal by remember { mutableStateOf(if (initialExpensesTotal > 0) String.format("%.2f", initialExpensesTotal) else "") }
+    var marketPricePerPercent by remember { mutableStateOf("") }
     var status by remember { mutableStateOf(editing?.status ?: Batch.STATUS_ACTIVE) }
 
-    var numberError by remember { mutableStateOf(false) }
+    val n = purchasePrice.toDoubleOrNull() ?: 0.0
+    val r = expensesTotal.toDoubleOrNull() ?: 0.0
+    val costPrice = n + r
+    val v = outputPercent.toIntOrNull() ?: 0
+    val h = marketPricePerPercent.toDoubleOrNull() ?: 0.0
+    val optimalPrice = if (h > 0) costPrice + v * h else null
+
     var dateError by remember { mutableStateOf(false) }
     var quantityError by remember { mutableStateOf(false) }
     var outputError by remember { mutableStateOf(false) }
-    var costError by remember { mutableStateOf(false) }
+    var purchaseError by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (editing == null) "Новая партия" else "Редактировать партию") },
+        title = {
+            Text(
+                if (editing == null) "Новая партия №$nextBatchNumber"
+                else "Редактировать партию №${editing.number}"
+            )
+        },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                AppTextField(value = number, onValueChange = { number = it; numberError = false },
-                    label = "Номер партии *", isError = numberError, errorText = "Обязательное поле")
-                AppTextField(value = formationDate, onValueChange = { formationDate = it; dateError = false },
-                    label = "Дата формирования * (ГГГГ-ММ-ДД)", isError = dateError,
-                    errorText = "Обязательное поле")
-                AppTextField(value = rawQuantityKg, onValueChange = { rawQuantityKg = it; quantityError = false },
+                DatePickerField(
+                    label = "Дата формирования *",
+                    value = formationDate,
+                    onValueChange = { formationDate = it; dateError = false },
+                    isError = dateError,
+                    errorText = "Обязательное поле"
+                )
+                AppTextField(
+                    value = rawQuantityKg,
+                    onValueChange = { rawQuantityKg = it; quantityError = false },
                     label = "Сырьё (кг) *", isError = quantityError, errorText = "Введите число > 0",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
-                AppTextField(value = outputPercent, onValueChange = { outputPercent = it; outputError = false },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                )
+                AppTextField(
+                    value = outputPercent,
+                    onValueChange = { outputPercent = it; outputError = false },
                     label = "Выход (%) *", isError = outputError, errorText = "Введите 1-100",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                AppTextField(value = costPrice, onValueChange = { costPrice = it; costError = false },
-                    label = "Себестоимость (₽) *", isError = costError, errorText = "Введите число > 0",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
-                AppTextField(value = optimalPricePerKg, onValueChange = { optimalPricePerKg = it },
-                    label = "Оптимальная цена ₽/кг (опц.)",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+
+                HorizontalDivider()
+                Text("Расчёт себестоимости", style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+
+                AppTextField(
+                    value = purchasePrice,
+                    onValueChange = { purchasePrice = it; purchaseError = false },
+                    label = "n — закупочная стоимость (₽) *",
+                    isError = purchaseError, errorText = "Введите число ≥ 0",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                )
+                AppTextField(
+                    value = expensesTotal,
+                    onValueChange = { expensesTotal = it },
+                    label = "R — все расходы (обраб., хранение, транспорт) (₽)",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                )
+
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("P = n + R", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                        Text(
+                            "${String.format("%.2f", costPrice)} ₽",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                HorizontalDivider()
+                Text("Расчёт оптимальной цены", style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+
+                AppTextField(
+                    value = marketPricePerPercent,
+                    onValueChange = { marketPricePerPercent = it },
+                    label = "h — рыночная цена за 1% выхода (₽)",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Сезон:", style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.align(androidx.compose.ui.Alignment.CenterVertically))
+                    AssistChip(
+                        onClick = { marketPricePerPercent = "10.0" },
+                        label = { Text("Высокий (10 ₽)") }
+                    )
+                    AssistChip(
+                        onClick = { marketPricePerPercent = "27.5" },
+                        label = { Text("Низкий (27.5 ₽)") }
+                    )
+                }
+
+                if (optimalPrice != null) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("So = P + v×h", style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium)
+                            Text(
+                                "${String.format("%.2f", optimalPrice)} ₽",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    }
+                }
+
+                HorizontalDivider()
+
                 AppDropdown(
                     label = "Статус",
                     selected = status,
@@ -69,17 +174,18 @@ fun AddEditBatchDialog(
         },
         confirmButton = {
             Button(onClick = {
-                numberError = number.isBlank()
                 dateError = formationDate.isBlank()
                 quantityError = rawQuantityKg.toDoubleOrNull()?.let { it <= 0 } ?: true
                 val pct = outputPercent.toIntOrNull()
                 outputError = pct == null || pct !in 1..100
-                costError = costPrice.toDoubleOrNull()?.let { it <= 0 } ?: true
-                if (!numberError && !dateError && !quantityError && !outputError && !costError) {
+                purchaseError = purchasePrice.toDoubleOrNull()?.let { it < 0 } ?: true
+                if (!dateError && !quantityError && !outputError && !purchaseError) {
                     onSave(
-                        number, formationDate, rawQuantityKg.toDouble(),
-                        outputPercent.toInt(), costPrice.toDouble(),
-                        optimalPricePerKg.toDoubleOrNull(), status
+                        formationDate, rawQuantityKg.toDouble(), outputPercent.toInt(),
+                        purchasePrice.toDoubleOrNull() ?: 0.0,
+                        expensesTotal.toDoubleOrNull() ?: 0.0,
+                        marketPricePerPercent.toDoubleOrNull() ?: 0.0,
+                        status
                     )
                 }
             }) { Text("Сохранить") }

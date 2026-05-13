@@ -1,7 +1,9 @@
 package com.wholesale.manager.presentation.main.tabs.expenses
 
 import androidx.lifecycle.*
+import com.wholesale.manager.di.BatchUseCases
 import com.wholesale.manager.di.ExpenseUseCases
+import com.wholesale.manager.domain.model.Batch
 import com.wholesale.manager.domain.model.Expense
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -10,6 +12,7 @@ import java.util.UUID
 
 data class ExpensesUiState(
     val items: List<Expense> = emptyList(),
+    val batches: List<Batch> = emptyList(),
     val searchQuery: String = "",
     val typeFilter: String = "",
     val showAddDialog: Boolean = false,
@@ -25,15 +28,19 @@ data class ExpensesUiState(
     val totalAmount: Double get() = filtered.sumOf { it.amount }
 }
 
-class ExpensesViewModel(private val useCases: ExpenseUseCases) : ViewModel() {
+class ExpensesViewModel(
+    private val useCases: ExpenseUseCases,
+    private val batchUseCases: BatchUseCases
+) : ViewModel() {
     private val _state = MutableStateFlow(ExpensesUiState())
     val state: StateFlow<ExpensesUiState> = _state.asStateFlow()
 
     init {
         viewModelScope.launch {
-            useCases.getAll().collect { list ->
-                _state.update { it.copy(items = list) }
-            }
+            useCases.getAll().collect { list -> _state.update { it.copy(items = list) } }
+        }
+        viewModelScope.launch {
+            batchUseCases.getAll().collect { list -> _state.update { it.copy(batches = list) } }
         }
     }
 
@@ -48,16 +55,20 @@ class ExpensesViewModel(private val useCases: ExpenseUseCases) : ViewModel() {
             val existing = _state.value.editingItem
             val now = Instant.now().toString()
             if (existing == null) {
-                useCases.create(Expense(
-                    id = UUID.randomUUID().toString(), lastModified = now,
-                    type = type, amount = amount, date = date,
-                    description = description, batchIds = batchIds
-                ))
+                useCases.create(
+                    Expense(
+                        id = UUID.randomUUID().toString(), lastModified = now,
+                        type = type, amount = amount, date = date,
+                        description = description, batchIds = batchIds
+                    )
+                )
             } else {
-                useCases.update(existing.copy(
-                    type = type, amount = amount, date = date,
-                    description = description, batchIds = batchIds, lastModified = now
-                ))
+                useCases.update(
+                    existing.copy(
+                        type = type, amount = amount, date = date,
+                        description = description, batchIds = batchIds, lastModified = now
+                    )
+                )
             }
             dismissDialog()
         }
@@ -68,9 +79,12 @@ class ExpensesViewModel(private val useCases: ExpenseUseCases) : ViewModel() {
     }
 }
 
-class ExpensesViewModelFactory(private val useCases: ExpenseUseCases) : ViewModelProvider.Factory {
+class ExpensesViewModelFactory(
+    private val useCases: ExpenseUseCases,
+    private val batchUseCases: BatchUseCases
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         @Suppress("UNCHECKED_CAST")
-        return ExpensesViewModel(useCases) as T
+        return ExpensesViewModel(useCases, batchUseCases) as T
     }
 }

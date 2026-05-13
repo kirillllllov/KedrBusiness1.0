@@ -26,11 +26,15 @@ fun BatchesTab(viewModel: BatchesViewModel) {
     val state by viewModel.state.collectAsState()
 
     if (state.showAddDialog) {
+        val editing = state.editingItem
         AddEditBatchDialog(
-            editing = state.editingItem,
+            editing = editing,
+            nextBatchNumber = state.nextBatchNumber,
+            initialPurchasePrice = state.linkedPurchasesSum(editing?.id),
+            initialExpensesTotal = state.linkedExpensesSum(editing?.id),
             onDismiss = { viewModel.dismissDialog() },
-            onSave = { number, formationDate, rawQty, outputPct, costPrice, optimalPrice, status ->
-                viewModel.save(number, formationDate, rawQty, outputPct, costPrice, optimalPrice, status)
+            onSave = { formationDate, rawQty, outputPct, purchasePrice, expensesTotal, marketPrice, status ->
+                viewModel.save(formationDate, rawQty, outputPct, purchasePrice, expensesTotal, marketPrice, status)
             }
         )
     }
@@ -124,7 +128,7 @@ fun BatchCard(item: Batch, onClick: () -> Unit) {
                 BatchInfoItem("Сырьё", "${item.rawQuantityKg} кг")
                 BatchInfoItem("Выход", "${item.outputPercent}%")
                 BatchInfoItem("Себест.", "${String.format("%.0f", item.costPrice)} ₽")
-                item.optimalPricePerKg?.let { BatchInfoItem("Опт. цена", "${String.format("%.2f", it)} ₽/кг") }
+                item.optimalPricePerKg?.let { BatchInfoItem("Опт. цена", "${String.format("%.2f", it)} ₽") }
             }
         }
     }

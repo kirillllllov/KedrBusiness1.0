@@ -28,6 +28,7 @@ fun ExpensesTab(viewModel: ExpensesViewModel) {
     if (state.showAddDialog) {
         AddEditExpenseDialog(
             editing = state.editingItem,
+            availableBatches = state.batches,
             onDismiss = { viewModel.dismissDialog() },
             onSave = { type, amount, date, description, batchIds ->
                 viewModel.save(type, amount, date, description, batchIds)

@@ -57,25 +57,53 @@ class OrdersViewModel(
             val existing = _state.value.editingItem
             val now = Instant.now().toString()
             val total = quantityKg * pricePerKg
+
             if (existing == null) {
-                useCases.create(Order(
-                    id = UUID.randomUUID().toString(), lastModified = now,
-                    customerName = customerName, customerPhone = customerPhone,
-                    customerAddress = customerAddress, batchId = batchId,
-                    quantityKg = quantityKg, pricePerKg = pricePerKg,
-                    totalAmount = total, creationDate = now.substring(0, 10),
-                    shipmentDate = shipmentDate, deliveryMethod = deliveryMethod, status = status
-                ))
+                useCases.create(
+                    Order(
+                        id = UUID.randomUUID().toString(), lastModified = now,
+                        customerName = customerName, customerPhone = customerPhone,
+                        customerAddress = customerAddress, batchId = batchId,
+                        quantityKg = quantityKg, pricePerKg = pricePerKg,
+                        totalAmount = total, creationDate = now.substring(0, 10),
+                        shipmentDate = shipmentDate, deliveryMethod = deliveryMethod, status = status
+                    )
+                )
             } else {
-                useCases.update(existing.copy(
-                    customerName = customerName, customerPhone = customerPhone,
-                    customerAddress = customerAddress, batchId = batchId,
-                    quantityKg = quantityKg, pricePerKg = pricePerKg,
-                    totalAmount = total, shipmentDate = shipmentDate,
-                    deliveryMethod = deliveryMethod, status = status, lastModified = now
-                ))
+                useCases.update(
+                    existing.copy(
+                        customerName = customerName, customerPhone = customerPhone,
+                        customerAddress = customerAddress, batchId = batchId,
+                        quantityKg = quantityKg, pricePerKg = pricePerKg,
+                        totalAmount = total, shipmentDate = shipmentDate,
+                        deliveryMethod = deliveryMethod, status = status, lastModified = now
+                    )
+                )
             }
+
+            checkAndUpdateBatchSoldOut(batchId, quantityKg, existing?.id, now)
             dismissDialog()
+        }
+    }
+
+    private suspend fun checkAndUpdateBatchSoldOut(
+        batchId: String,
+        newQuantityKg: Double,
+        existingOrderId: String?,
+        now: String
+    ) {
+        val batch = _state.value.batches.find { it.id == batchId } ?: return
+        val availableKg = batch.rawQuantityKg * batch.outputPercent / 100.0
+
+        val totalOrdered = _state.value.items
+            .filter { it.batchId == batchId && it.status != Order.STATUS_CANCELLED }
+            .filter { it.id != existingOrderId }
+            .sumOf { it.quantityKg } + newQuantityKg
+
+        if (totalOrdered >= availableKg && batch.status != Batch.STATUS_SOLD_OUT) {
+            batchUseCases.update(batch.copy(status = Batch.STATUS_SOLD_OUT, lastModified = now))
+        } else if (totalOrdered < availableKg && batch.status == Batch.STATUS_SOLD_OUT) {
+            batchUseCases.update(batch.copy(status = Batch.STATUS_ACTIVE, lastModified = now))
         }
     }
 

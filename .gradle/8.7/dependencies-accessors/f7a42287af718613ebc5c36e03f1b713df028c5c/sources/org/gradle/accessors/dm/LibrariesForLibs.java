@@ -497,7 +497,7 @@ public class LibrariesForLibs extends AbstractExternalDependencyFactory {
         public Provider<String> getGson() { return getVersion("gson"); }
 
         /**
-         * Version alias <b>kotlin</b> with value <b>2.0.21</b>
+         * Version alias <b>kotlin</b> with value <b>2.0.20</b>
          * <p>
          * If the version is a rich version and cannot be represented as a
          * single version string, an empty string is returned.
@@ -507,7 +507,7 @@ public class LibrariesForLibs extends AbstractExternalDependencyFactory {
         public Provider<String> getKotlin() { return getVersion("kotlin"); }
 
         /**
-         * Version alias <b>ksp</b> with value <b>1.9.24-1.0.20</b>
+         * Version alias <b>ksp</b> with value <b>2.0.20-1.0.25</b>
          * <p>
          * If the version is a rich version and cannot be represented as a
          * single version string, an empty string is returned.

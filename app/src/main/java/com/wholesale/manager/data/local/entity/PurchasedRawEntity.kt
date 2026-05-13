@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "purchased_raws")
 data class PurchasedRawEntity(
     @PrimaryKey val id: String,
+    val number: Int = 0,
     val serverId: String? = null,
     val lastModified: String,
     val isDeleted: Boolean = false,

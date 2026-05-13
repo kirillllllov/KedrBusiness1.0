@@ -24,16 +24,16 @@ class PurchasedRawRepositoryImpl(private val dao: PurchasedRawDao) : PurchasedRa
     }
 
     private fun PurchasedRawEntity.toDomain() = PurchasedRaw(
-        id = id, serverId = serverId, lastModified = lastModified, isDeleted = isDeleted,
-        type = type, quantityKg = quantityKg, purchasePriceTotal = purchasePriceTotal,
-        pricePerKg = pricePerKg, supplierName = supplierName, purchaseDate = purchaseDate,
-        status = status, batchId = batchId
+        id = id, number = number, serverId = serverId, lastModified = lastModified,
+        isDeleted = isDeleted, type = type, quantityKg = quantityKg,
+        purchasePriceTotal = purchasePriceTotal, pricePerKg = pricePerKg,
+        supplierName = supplierName, purchaseDate = purchaseDate, status = status, batchId = batchId
     )
 
     private fun PurchasedRaw.toEntity() = PurchasedRawEntity(
-        id = id, serverId = serverId, lastModified = lastModified, isDeleted = isDeleted,
-        type = type, quantityKg = quantityKg, purchasePriceTotal = purchasePriceTotal,
-        pricePerKg = pricePerKg, supplierName = supplierName, purchaseDate = purchaseDate,
-        status = status, batchId = batchId
+        id = id, number = number, serverId = serverId, lastModified = lastModified,
+        isDeleted = isDeleted, type = type, quantityKg = quantityKg,
+        purchasePriceTotal = purchasePriceTotal, pricePerKg = pricePerKg,
+        supplierName = supplierName, purchaseDate = purchaseDate, status = status, batchId = batchId
     )
 }

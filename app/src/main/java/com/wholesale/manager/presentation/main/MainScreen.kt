@@ -31,13 +31,23 @@ fun MainScreen() {
     val context = LocalContext.current
 
     val purchasesViewModel: PurchasesViewModel = viewModel(
-        factory = PurchasesViewModelFactory(AppModule.providePurchaseUseCases(context))
+        factory = PurchasesViewModelFactory(
+            AppModule.providePurchaseUseCases(context),
+            AppModule.provideBatchUseCases(context)
+        )
     )
     val batchesViewModel: BatchesViewModel = viewModel(
-        factory = BatchesViewModelFactory(AppModule.provideBatchUseCases(context))
+        factory = BatchesViewModelFactory(
+            AppModule.provideBatchUseCases(context),
+            AppModule.providePurchaseUseCases(context),
+            AppModule.provideExpenseUseCases(context)
+        )
     )
     val expensesViewModel: ExpensesViewModel = viewModel(
-        factory = ExpensesViewModelFactory(AppModule.provideExpenseUseCases(context))
+        factory = ExpensesViewModelFactory(
+            AppModule.provideExpenseUseCases(context),
+            AppModule.provideBatchUseCases(context)
+        )
     )
     val ordersViewModel: OrdersViewModel = viewModel(
         factory = OrdersViewModelFactory(

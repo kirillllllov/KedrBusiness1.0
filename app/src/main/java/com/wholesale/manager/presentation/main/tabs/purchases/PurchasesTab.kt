@@ -1,7 +1,6 @@
 package com.wholesale.manager.presentation.main.tabs.purchases
 
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,7 +12,6 @@ import androidx.compose.material3.SwipeToDismissBoxValue.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -30,6 +28,8 @@ fun PurchasesTab(viewModel: PurchasesViewModel) {
     if (state.showAddDialog) {
         AddEditPurchaseDialog(
             editing = state.editingItem,
+            nextPurchaseNumber = state.nextPurchaseNumber,
+            availableBatches = state.batches,
             onDismiss = { viewModel.dismissDialog() },
             onSave = { type, qty, total, supplier, date, status, batchId ->
                 viewModel.save(type, qty, total, supplier, date, status, batchId)
@@ -63,8 +63,12 @@ fun PurchasesTab(viewModel: PurchasesViewModel) {
                 placeholder = "Поиск по поставщику или типу..."
             )
             FilterChipRow(
-                options = listOf("" to "Все", PurchasedRaw.STATUS_PENDING to "Ожидает",
-                    PurchasedRaw.STATUS_IN_BATCH to "В партии", PurchasedRaw.STATUS_PROCESSED to "Обработано"),
+                options = listOf(
+                    "" to "Все",
+                    PurchasedRaw.STATUS_PENDING to "Ожидает",
+                    PurchasedRaw.STATUS_IN_BATCH to "В партии",
+                    PurchasedRaw.STATUS_PROCESSED to "Обработано"
+                ),
                 selected = state.statusFilter,
                 onSelected = viewModel::onStatusFilterChanged
             )
@@ -115,8 +119,11 @@ fun PurchaseCard(item: PurchasedRaw, onClick: () -> Unit) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(item.type, fontWeight = FontWeight.SemiBold,
-                        style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Закупка №${item.number} · ${item.type}",
+                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
                     Text(item.supplierName, style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }

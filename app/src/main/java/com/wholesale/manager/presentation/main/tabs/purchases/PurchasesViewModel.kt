@@ -1,7 +1,9 @@
 package com.wholesale.manager.presentation.main.tabs.purchases
 
 import androidx.lifecycle.*
+import com.wholesale.manager.di.BatchUseCases
 import com.wholesale.manager.di.PurchaseUseCases
+import com.wholesale.manager.domain.model.Batch
 import com.wholesale.manager.domain.model.PurchasedRaw
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -10,6 +12,7 @@ import java.util.UUID
 
 data class PurchasesUiState(
     val items: List<PurchasedRaw> = emptyList(),
+    val batches: List<Batch> = emptyList(),
     val searchQuery: String = "",
     val statusFilter: String = "",
     val isLoading: Boolean = false,
@@ -23,9 +26,15 @@ data class PurchasesUiState(
                     p.type.contains(searchQuery, ignoreCase = true)) &&
                     (statusFilter.isBlank() || p.status == statusFilter)
         }
+
+    val nextPurchaseNumber: Int
+        get() = (items.maxOfOrNull { it.number } ?: 0) + 1
 }
 
-class PurchasesViewModel(private val useCases: PurchaseUseCases) : ViewModel() {
+class PurchasesViewModel(
+    private val useCases: PurchaseUseCases,
+    private val batchUseCases: BatchUseCases
+) : ViewModel() {
     private val _state = MutableStateFlow(PurchasesUiState())
     val state: StateFlow<PurchasesUiState> = _state.asStateFlow()
 
@@ -35,9 +44,10 @@ class PurchasesViewModel(private val useCases: PurchaseUseCases) : ViewModel() {
 
     private fun loadAll() {
         viewModelScope.launch {
-            useCases.getAll().collect { list ->
-                _state.update { it.copy(items = list) }
-            }
+            useCases.getAll().collect { list -> _state.update { it.copy(items = list) } }
+        }
+        viewModelScope.launch {
+            batchUseCases.getAll().collect { list -> _state.update { it.copy(batches = list) } }
         }
     }
 
@@ -56,9 +66,12 @@ class PurchasesViewModel(private val useCases: PurchaseUseCases) : ViewModel() {
             val now = Instant.now().toString()
             val pricePerKg = if (quantityKg > 0) purchasePriceTotal / quantityKg else 0.0
             if (existing == null) {
+                val number = _state.value.nextPurchaseNumber
                 useCases.create(
                     PurchasedRaw(
-                        id = UUID.randomUUID().toString(), lastModified = now,
+                        id = UUID.randomUUID().toString(),
+                        number = number,
+                        lastModified = now,
                         type = type, quantityKg = quantityKg, purchasePriceTotal = purchasePriceTotal,
                         pricePerKg = pricePerKg, supplierName = supplierName,
                         purchaseDate = purchaseDate, status = status, batchId = batchId
@@ -83,9 +96,12 @@ class PurchasesViewModel(private val useCases: PurchaseUseCases) : ViewModel() {
     }
 }
 
-class PurchasesViewModelFactory(private val useCases: PurchaseUseCases) : ViewModelProvider.Factory {
+class PurchasesViewModelFactory(
+    private val useCases: PurchaseUseCases,
+    private val batchUseCases: BatchUseCases
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         @Suppress("UNCHECKED_CAST")
-        return PurchasesViewModel(useCases) as T
+        return PurchasesViewModel(useCases, batchUseCases) as T
     }
 }

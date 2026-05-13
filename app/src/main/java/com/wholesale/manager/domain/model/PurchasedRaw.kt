@@ -2,6 +2,7 @@ package com.wholesale.manager.domain.model
 
 data class PurchasedRaw(
     val id: String,
+    val number: Int = 0,
     val serverId: String? = null,
     val lastModified: String,
     val isDeleted: Boolean = false,
