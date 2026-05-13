@@ -1,0 +1,142 @@
+ЭТАП 1: Модели данных и Room БД
+Создать все сущности:
+1.1 Создать пакет data/local/entity/ и следующие файлы:
+
+BatchEntity.kt
+PurchasedRawEntity.kt
+OrderEntity.kt
+ExpenseEntity.kt
+
+Обязательные поля:
+BatchEntity (Партии)
+
+id: String (UUID)
+serverId: String?
+number: String
+formationDate: String (ISO 8601)
+rawQuantityKg: Double
+outputPercent: Int
+costPrice: Double
+optimalPricePerKg: Double?
+status: String ("ACTIVE", "SOLD_OUT")
+lastModified: String
+isDeleted: Boolean = false
+
+PurchasedRawEntity (Закупки)
+
+id, serverId, lastModified, isDeleted
+type: String
+quantityKg: Double
+purchasePriceTotal: Double
+pricePerKg: Double
+supplierName: String
+purchaseDate: String
+status: String
+batchId: String?
+
+OrderEntity (Заказы)
+
+id, serverId, lastModified, isDeleted
+customerName, customerPhone, customerAddress?
+batchId: String
+quantityKg: Double
+pricePerKg: Double
+totalAmount: Double
+creationDate: String
+shipmentDate: String?
+deliveryMethod: String
+status: String
+
+ExpenseEntity (Расходы)
+
+id, serverId, lastModified, isDeleted
+type: String
+amount: Double
+date: String
+description: String?
+batchIdsJson: String (список id партий в JSON)
+
+1.2 Создать AppDatabase.kt и все DAO (BatchDao, PurchasedRawDao, OrderDao, ExpenseDao) с методами:
+
+getAllNotDeleted()
+getById()
+insert()
+update()
+softDelete()
+
+
+ЭТАП 2: Репозитории и UseCases
+Создать:
+
+data/repository/ — реализации репозиториев
+domain/repository/ — интерфейсы
+domain/usecase/ — UseCase для каждой операции (Create, Update, Delete, GetAll и т.д.)
+
+Можно начать с одного общего LocalRepository, а потом разбить.
+
+ЭТАП 3: Главный экран и навигация
+Создать структуру:
+textpresentation/
+  └── main/
+       ├── MainScreen.kt
+       ├── MainViewModel.kt
+       ├── BottomNavItem.kt
+       └── tabs/
+            ├── batches/
+            ├── purchases/
+            ├── orders/
+            └── expenses/
+Реализовать:
+
+BottomNavItem.kt (sealed class с 4 вкладками + иконки Material)
+MainScreen.kt — Scaffold + BottomNavigationBar + NavHost
+
+
+ЭТАП 4: Реализация всех четырёх вкладок
+Для каждой вкладки реализовать полностью:
+
+Список (XXXListScreen.kt)
+LazyColumn с карточками
+Поисковая строка
+Фильтры (по статусу, дате)
+FAB кнопка «+»
+Поддержка свайпов (редактировать / удалить)
+
+Форма добавления/редактирования (AddXXXScreen.kt / EditXXXScreen.kt)
+Все необходимые поля с TextField, DatePicker, Dropdown
+Валидация
+Кнопка «Сохранить»
+
+ViewModel (XXXViewModel.kt)
+Загрузка списка
+Поиск
+CRUD операции
+
+
+
+Конкретный порядок реализации вкладок:
+Вкладка 1: Закупки (начать с неё)
+
+PurchasesTab.kt
+AddPurchaseScreen.kt
+PurchasesViewModel.kt
+
+Вкладка 2: Партии
+
+BatchesTab.kt
+AddBatchScreen.kt
+BatchesViewModel.kt
+
+Вкладка 3: Расходы
+
+ExpensesTab.kt
+AddExpenseScreen.kt
+ExpensesViewModel.kt
+
+Вкладка 4: Заказы
+
+OrdersTab.kt
+AddOrderScreen.kt
+OrdersViewModel.kt
+
+Используй Clean Architecture + MVVM + StateFlow. Все данные сохраняются локально в Room. Soft delete. Современный Material 3 дизайн.
