@@ -15,15 +15,26 @@ data class OrdersUiState(
     val batches: List<Batch> = emptyList(),
     val searchQuery: String = "",
     val statusFilter: String = "",
+    val dateFrom: String = "",
+    val dateTo: String = "",
+    val sortNewest: Boolean = true,
     val showAddDialog: Boolean = false,
     val editingItem: Order? = null
 ) {
     val filtered: List<Order>
-        get() = items.filter { o ->
-            (searchQuery.isBlank() || o.customerName.contains(searchQuery, ignoreCase = true) ||
-                    o.customerPhone.contains(searchQuery, ignoreCase = true)) &&
-                    (statusFilter.isBlank() || o.status == statusFilter)
+        get() {
+            val base = items.filter { o ->
+                (searchQuery.isBlank() || o.customerName.contains(searchQuery, ignoreCase = true) ||
+                        o.customerPhone.contains(searchQuery, ignoreCase = true)) &&
+                        (statusFilter.isBlank() || o.status == statusFilter) &&
+                        (dateFrom.isBlank() || o.creationDate >= dateFrom) &&
+                        (dateTo.isBlank() || o.creationDate <= dateTo)
+            }
+            return if (sortNewest) base.sortedByDescending { it.creationDate }
+            else base.sortedBy { it.creationDate }
         }
+
+    val totalAmount: Double get() = filtered.sumOf { it.totalAmount }
 }
 
 class OrdersViewModel(
@@ -44,6 +55,10 @@ class OrdersViewModel(
 
     fun onSearchChanged(query: String) = _state.update { it.copy(searchQuery = query) }
     fun onStatusFilterChanged(s: String) = _state.update { it.copy(statusFilter = s) }
+    fun onDateFromChanged(d: String) = _state.update { it.copy(dateFrom = d) }
+    fun onDateToChanged(d: String) = _state.update { it.copy(dateTo = d) }
+    fun clearDateRange() = _state.update { it.copy(dateFrom = "", dateTo = "") }
+    fun toggleSort() = _state.update { it.copy(sortNewest = !it.sortNewest) }
     fun showAddDialog() = _state.update { it.copy(showAddDialog = true, editingItem = null) }
     fun showEditDialog(item: Order) = _state.update { it.copy(showAddDialog = true, editingItem = item) }
     fun dismissDialog() = _state.update { it.copy(showAddDialog = false, editingItem = null) }
@@ -64,7 +79,6 @@ class OrdersViewModel(
             val existing = _state.value.editingItem
             val now = Instant.now().toString()
             val total = quantityKg * pricePerKg
-
             if (existing == null) {
                 useCases.create(
                     Order(
@@ -87,26 +101,20 @@ class OrdersViewModel(
                     )
                 )
             }
-
             checkAndUpdateBatchSoldOut(batchId, quantityKg, existing?.id, now)
             dismissDialog()
         }
     }
 
     private suspend fun checkAndUpdateBatchSoldOut(
-        batchId: String,
-        newQuantityKg: Double,
-        existingOrderId: String?,
-        now: String
+        batchId: String, newQuantityKg: Double, existingOrderId: String?, now: String
     ) {
         val batch = _state.value.batches.find { it.id == batchId } ?: return
         val availableKg = batch.outputKg
-
         val totalOrdered = _state.value.items
             .filter { it.batchId == batchId && it.status != Order.STATUS_CANCELLED }
             .filter { it.id != existingOrderId }
             .sumOf { it.quantityKg } + newQuantityKg
-
         if (totalOrdered >= availableKg && availableKg > 0 && batch.status != Batch.STATUS_SOLD_OUT) {
             batchUseCases.update(batch.copy(status = Batch.STATUS_SOLD_OUT, lastModified = now))
         } else if (totalOrdered < availableKg && batch.status == Batch.STATUS_SOLD_OUT) {

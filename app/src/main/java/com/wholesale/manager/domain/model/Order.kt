@@ -19,9 +19,7 @@ data class Order(
 ) {
     companion object {
         const val STATUS_NEW = "NEW"
-        const val STATUS_CONFIRMED = "CONFIRMED"
-        const val STATUS_SHIPPED = "SHIPPED"
-        const val STATUS_DELIVERED = "DELIVERED"
+        const val STATUS_COMPLETED = "COMPLETED"
         const val STATUS_CANCELLED = "CANCELLED"
 
         const val DELIVERY_PICKUP = "PICKUP"

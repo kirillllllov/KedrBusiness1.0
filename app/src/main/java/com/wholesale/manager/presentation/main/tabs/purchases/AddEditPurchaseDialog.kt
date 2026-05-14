@@ -7,6 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.wholesale.manager.domain.model.Batch
@@ -14,6 +15,13 @@ import com.wholesale.manager.domain.model.PurchasedRaw
 import com.wholesale.manager.presentation.common.AppDropdown
 import com.wholesale.manager.presentation.common.AppTextField
 import com.wholesale.manager.presentation.common.DatePickerField
+import java.time.LocalDate
+
+private const val CUSTOM_TYPE_KEY = "__CUSTOM__"
+private val PRESET_RAW_TYPES = listOf(
+    "Кедровая шишка",
+    "Кедровый орех"
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,16 +33,26 @@ fun AddEditPurchaseDialog(
     onSave: (type: String, quantityKg: Double, purchasePriceTotal: Double,
              supplierName: String, purchaseDate: String, status: String, batchId: String?) -> Unit
 ) {
-    var type by remember { mutableStateOf(editing?.type ?: "") }
+    val today = LocalDate.now().toString()
+
+    val editingTypeIsCustom = editing?.type != null && editing.type !in PRESET_RAW_TYPES
+    var selectedTypeKey by remember {
+        mutableStateOf(
+            if (editingTypeIsCustom) CUSTOM_TYPE_KEY else (editing?.type ?: PRESET_RAW_TYPES[0])
+        )
+    }
+    var customTypeText by remember { mutableStateOf(if (editingTypeIsCustom) editing!!.type else "") }
+    var typeDropdownExpanded by remember { mutableStateOf(false) }
+
     var quantityKg by remember { mutableStateOf(editing?.quantityKg?.toString() ?: "") }
     var purchasePriceTotal by remember { mutableStateOf(editing?.purchasePriceTotal?.toString() ?: "") }
     var supplierName by remember { mutableStateOf(editing?.supplierName ?: "") }
-    var purchaseDate by remember { mutableStateOf(editing?.purchaseDate ?: "") }
+    var purchaseDate by remember { mutableStateOf(editing?.purchaseDate ?: today) }
     var status by remember { mutableStateOf(editing?.status ?: PurchasedRaw.STATUS_PENDING) }
     var selectedBatchId by remember { mutableStateOf(editing?.batchId ?: "") }
     var batchDropdownExpanded by remember { mutableStateOf(false) }
 
-    var typeError by remember { mutableStateOf(false) }
+    var customTypeError by remember { mutableStateOf(false) }
     var quantityError by remember { mutableStateOf(false) }
     var priceError by remember { mutableStateOf(false) }
     var supplierError by remember { mutableStateOf(false) }
@@ -43,6 +61,12 @@ fun AddEditPurchaseDialog(
     val qty = quantityKg.toDoubleOrNull() ?: 0.0
     val total = purchasePriceTotal.toDoubleOrNull() ?: 0.0
     val pricePerKg = if (qty > 0 && total > 0) total / qty else null
+
+    val typeOptions = PRESET_RAW_TYPES.map { it to it } + listOf(CUSTOM_TYPE_KEY to "Свой вид...")
+    val displayTypeName = if (selectedTypeKey == CUSTOM_TYPE_KEY && customTypeText.isNotBlank())
+        customTypeText
+    else if (selectedTypeKey == CUSTOM_TYPE_KEY) "Свой вид..."
+    else selectedTypeKey
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -57,11 +81,49 @@ fun AddEditPurchaseDialog(
                 modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                AppTextField(
-                    value = type,
-                    onValueChange = { type = it; typeError = false },
-                    label = "Вид сырья *", isError = typeError, errorText = "Обязательное поле"
-                )
+                ExposedDropdownMenuBox(
+                    expanded = typeDropdownExpanded,
+                    onExpandedChange = { typeDropdownExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = displayTypeName,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Вид сырья *") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeDropdownExpanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = typeDropdownExpanded,
+                        onDismissRequest = { typeDropdownExpanded = false }
+                    ) {
+                        typeOptions.forEach { (key, label) ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        label,
+                                        fontWeight = if (selectedTypeKey == key) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                onClick = {
+                                    selectedTypeKey = key
+                                    typeDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                if (selectedTypeKey == CUSTOM_TYPE_KEY) {
+                    AppTextField(
+                        value = customTypeText,
+                        onValueChange = { customTypeText = it; customTypeError = false },
+                        label = "Укажите вид сырья *",
+                        isError = customTypeError,
+                        errorText = "Обязательное поле"
+                    )
+                }
+
                 AppTextField(
                     value = supplierName,
                     onValueChange = { supplierName = it; supplierError = false },
@@ -122,9 +184,7 @@ fun AddEditPurchaseDialog(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Привязать к партии (опц.)") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = batchDropdownExpanded)
-                        },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = batchDropdownExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
                     ExposedDropdownMenu(
@@ -133,10 +193,7 @@ fun AddEditPurchaseDialog(
                     ) {
                         DropdownMenuItem(
                             text = { Text("Не выбрана") },
-                            onClick = {
-                                selectedBatchId = ""
-                                batchDropdownExpanded = false
-                            }
+                            onClick = { selectedBatchId = ""; batchDropdownExpanded = false }
                         )
                         availableBatches.forEach { batch ->
                             DropdownMenuItem(
@@ -149,10 +206,7 @@ fun AddEditPurchaseDialog(
                                             color = MaterialTheme.colorScheme.outline)
                                     }
                                 },
-                                onClick = {
-                                    selectedBatchId = batch.id
-                                    batchDropdownExpanded = false
-                                }
+                                onClick = { selectedBatchId = batch.id; batchDropdownExpanded = false }
                             )
                         }
                     }
@@ -161,16 +215,16 @@ fun AddEditPurchaseDialog(
         },
         confirmButton = {
             Button(onClick = {
-                typeError = type.isBlank()
+                customTypeError = selectedTypeKey == CUSTOM_TYPE_KEY && customTypeText.isBlank()
                 supplierError = supplierName.isBlank()
                 quantityError = quantityKg.toDoubleOrNull()?.let { it <= 0 } ?: true
                 priceError = purchasePriceTotal.toDoubleOrNull()?.let { it <= 0 } ?: true
                 dateError = purchaseDate.isBlank()
-                if (!typeError && !supplierError && !quantityError && !priceError && !dateError) {
+                if (!customTypeError && !supplierError && !quantityError && !priceError && !dateError) {
+                    val finalType = if (selectedTypeKey == CUSTOM_TYPE_KEY) customTypeText else selectedTypeKey
                     onSave(
-                        type, quantityKg.toDouble(), purchasePriceTotal.toDouble(),
-                        supplierName, purchaseDate, status,
-                        selectedBatchId.ifBlank { null }
+                        finalType, quantityKg.toDouble(), purchasePriceTotal.toDouble(),
+                        supplierName, purchaseDate, status, selectedBatchId.ifBlank { null }
                     )
                 }
             }) { Text("Сохранить") }

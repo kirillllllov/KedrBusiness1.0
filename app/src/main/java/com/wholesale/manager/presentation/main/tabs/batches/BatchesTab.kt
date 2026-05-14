@@ -55,8 +55,17 @@ fun BatchesTab(viewModel: BatchesViewModel, userRole: String) {
                 title = { Text("Партии", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                )
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                actions = {
+                    IconButton(onClick = { viewModel.toggleSort() }) {
+                        Icon(
+                            if (state.sortNewest) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowUp,
+                            contentDescription = if (state.sortNewest) "Сначала новые" else "Сначала старые"
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {
@@ -71,11 +80,8 @@ fun BatchesTab(viewModel: BatchesViewModel, userRole: String) {
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            SearchBar(
-                query = state.searchQuery,
-                onQueryChanged = viewModel::onSearchChanged,
-                placeholder = "Поиск по номеру партии..."
-            )
+            SearchBar(query = state.searchQuery, onQueryChanged = viewModel::onSearchChanged,
+                placeholder = "Поиск по номеру партии...")
             FilterChipRow(
                 options = listOf(
                     "" to "Все",
@@ -108,15 +114,11 @@ fun BatchesTab(viewModel: BatchesViewModel, userRole: String) {
                                 confirmValueChange = { value ->
                                     when (value) {
                                         EndToStart -> {
-                                            if (Permissions.canDeleteBatch(userRole)) {
-                                                pendingDeleteId = item.id
-                                            }
+                                            if (Permissions.canDeleteBatch(userRole)) pendingDeleteId = item.id
                                             false
                                         }
                                         StartToEnd -> {
-                                            if (Permissions.canEditBatch(userRole)) {
-                                                viewModel.showEditDialog(item)
-                                            }
+                                            if (Permissions.canEditBatch(userRole)) viewModel.showEditDialog(item)
                                             false
                                         }
                                         else -> false
@@ -132,9 +134,7 @@ fun BatchesTab(viewModel: BatchesViewModel, userRole: String) {
                                         purchaseInfo = linkedPurchase?.let { "Закупка №${it.number} · ${it.type}" },
                                         expensesTotal = state.expensesTotalForPurchase(item.purchaseId),
                                         remainingKg = remaining,
-                                        onClick = {
-                                            if (Permissions.canEditBatch(userRole)) viewModel.showEditDialog(item)
-                                        }
+                                        onClick = { if (Permissions.canEditBatch(userRole)) viewModel.showEditDialog(item) }
                                     )
                                 }
                             )
@@ -182,10 +182,7 @@ fun BatchCard(
                 BatchStatusChip(item.status)
             }
             Spacer(modifier = Modifier.height(10.dp))
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 if (item.rawQuantityKg > 0) BatchInfoItem("Сырьё", "${item.rawQuantityKg} кг")
                 if (item.outputKg > 0) BatchInfoItem("Выход", "${item.outputKg} кг")
                 if (item.outputPercent > 0) BatchInfoItem("%", "${item.outputPercent}%")
@@ -206,11 +203,12 @@ fun BatchCard(
                     ) {
                         Text("Остаток:", style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${String.format("%.1f", remainingKg)} кг",
+                        Text(
+                            "${String.format("%.1f", remainingKg)} кг",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
-                            color = if (remainingKg > 0) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.outline)
+                            color = if (remainingKg > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                        )
                     }
                 }
             }
@@ -218,10 +216,7 @@ fun BatchCard(
                 Spacer(modifier = Modifier.height(6.dp))
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Расходы по закупке:", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline)
                     Text("${String.format("%.0f", expensesTotal)} ₽",

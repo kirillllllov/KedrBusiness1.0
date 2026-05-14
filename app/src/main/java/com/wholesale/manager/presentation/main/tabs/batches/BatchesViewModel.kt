@@ -22,13 +22,18 @@ data class BatchesUiState(
     val allOrders: List<Order> = emptyList(),
     val searchQuery: String = "",
     val statusFilter: String = "",
+    val sortNewest: Boolean = true,
     val showAddDialog: Boolean = false,
     val editingItem: Batch? = null
 ) {
     val filtered: List<Batch>
-        get() = items.filter { b ->
-            (searchQuery.isBlank() || b.number.contains(searchQuery, ignoreCase = true)) &&
-                    (statusFilter.isBlank() || b.status == statusFilter)
+        get() {
+            val base = items.filter { b ->
+                (searchQuery.isBlank() || b.number.contains(searchQuery, ignoreCase = true)) &&
+                        (statusFilter.isBlank() || b.status == statusFilter)
+            }
+            return if (sortNewest) base.sortedByDescending { it.formationDate }
+            else base.sortedBy { it.formationDate }
         }
 
     val nextBatchNumber: String
@@ -78,6 +83,7 @@ class BatchesViewModel(
 
     fun onSearchChanged(query: String) = _state.update { it.copy(searchQuery = query) }
     fun onStatusFilterChanged(s: String) = _state.update { it.copy(statusFilter = s) }
+    fun toggleSort() = _state.update { it.copy(sortNewest = !it.sortNewest) }
     fun showAddDialog() = _state.update { it.copy(showAddDialog = true, editingItem = null) }
     fun showEditDialog(item: Batch) = _state.update { it.copy(showAddDialog = true, editingItem = item) }
     fun dismissDialog() = _state.update { it.copy(showAddDialog = false, editingItem = null) }
@@ -93,7 +99,6 @@ class BatchesViewModel(
             val existing = _state.value.editingItem
             val now = Instant.now().toString()
             val st = _state.value
-
             val purchase = st.purchaseById(purchaseId)
             val n = purchase?.purchasePriceTotal ?: 0.0
             val rawQty = purchase?.quantityKg ?: 0.0
@@ -102,50 +107,31 @@ class BatchesViewModel(
             val outputPercent = if (rawQty > 0) (outputKg / rawQty * 100).roundToInt() else 0
             val pPerKg = if (outputKg > 0) costPrice / outputKg else 0.0
             val optimalPricePerKg = if (marketPricePerPercent > 0 && outputPercent > 0)
-                pPerKg + outputPercent * marketPricePerPercent
-            else null
+                pPerKg + outputPercent * marketPricePerPercent else null
 
             if (existing == null) {
                 useCases.create(
                     Batch(
-                        id = UUID.randomUUID().toString(),
-                        number = st.nextBatchNumber,
-                        formationDate = formationDate,
-                        purchaseId = purchaseId,
-                        rawQuantityKg = rawQty,
-                        outputKg = outputKg,
-                        outputPercent = outputPercent,
-                        costPrice = costPrice,
-                        optimalPricePerKg = optimalPricePerKg,
-                        status = status,
-                        lastModified = now
+                        id = UUID.randomUUID().toString(), number = st.nextBatchNumber,
+                        formationDate = formationDate, purchaseId = purchaseId,
+                        rawQuantityKg = rawQty, outputKg = outputKg,
+                        outputPercent = outputPercent, costPrice = costPrice,
+                        optimalPricePerKg = optimalPricePerKg, status = status, lastModified = now
                     )
                 )
             } else {
                 useCases.update(
                     existing.copy(
-                        formationDate = formationDate,
-                        purchaseId = purchaseId,
-                        rawQuantityKg = rawQty,
-                        outputKg = outputKg,
-                        outputPercent = outputPercent,
-                        costPrice = costPrice,
-                        optimalPricePerKg = optimalPricePerKg,
-                        status = status,
-                        lastModified = now
+                        formationDate = formationDate, purchaseId = purchaseId,
+                        rawQuantityKg = rawQty, outputKg = outputKg,
+                        outputPercent = outputPercent, costPrice = costPrice,
+                        optimalPricePerKg = optimalPricePerKg, status = status, lastModified = now
                     )
                 )
             }
-
             if (purchase != null && purchase.status != PurchasedRaw.STATUS_IN_BATCH) {
-                purchaseUseCases.update(
-                    purchase.copy(
-                        status = PurchasedRaw.STATUS_IN_BATCH,
-                        lastModified = now
-                    )
-                )
+                purchaseUseCases.update(purchase.copy(status = PurchasedRaw.STATUS_IN_BATCH, lastModified = now))
             }
-
             dismissDialog()
         }
     }

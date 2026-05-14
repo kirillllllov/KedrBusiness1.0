@@ -16,6 +16,7 @@ import com.wholesale.manager.domain.model.PurchasedRaw
 import com.wholesale.manager.presentation.common.AppDropdown
 import com.wholesale.manager.presentation.common.AppTextField
 import com.wholesale.manager.presentation.common.DatePickerField
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,7 +34,8 @@ fun AddEditBatchDialog(
         status: String
     ) -> Unit
 ) {
-    var formationDate by remember { mutableStateOf(editing?.formationDate ?: "") }
+    val today = LocalDate.now().toString()
+    var formationDate by remember { mutableStateOf(editing?.formationDate ?: today) }
     var selectedPurchaseId by remember {
         mutableStateOf(editing?.purchaseId ?: availablePurchases.firstOrNull()?.id ?: "")
     }
@@ -72,7 +74,7 @@ fun AddEditBatchDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 DatePickerField(
-                    label = "Дата формирования *",
+                    label = "Дата формирования",
                     value = formationDate,
                     onValueChange = { formationDate = it; dateError = false },
                     isError = dateError,
@@ -103,45 +105,29 @@ fun AddEditBatchDialog(
                             DropdownMenuItem(
                                 text = {
                                     Column {
-                                        Text(
-                                            "Закупка №${p.number} · ${p.type}",
+                                        Text("Закупка №${p.number} · ${p.type}",
                                             style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                        Text(
-                                            "${p.supplierName} · ${p.quantityKg} кг · ${String.format("%.0f", p.purchasePriceTotal)} ₽ · ${p.purchaseDate}",
+                                            fontWeight = FontWeight.Medium)
+                                        Text("${p.supplierName} · ${p.quantityKg} кг · ${String.format("%.0f", p.purchasePriceTotal)} ₽ · ${p.purchaseDate}",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.outline
-                                        )
+                                            color = MaterialTheme.colorScheme.outline)
                                     }
                                 },
-                                onClick = {
-                                    selectedPurchaseId = p.id
-                                    purchaseDropdownExpanded = false
-                                }
+                                onClick = { selectedPurchaseId = p.id; purchaseDropdownExpanded = false }
                             )
                         }
                     }
                 }
 
                 if (selectedPurchase != null) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = MaterialTheme.shapes.small
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().padding(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
+                    Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.small) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text("Исходное сырьё: ${selectedPurchase.quantityKg} кг (${selectedPurchase.type})",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("n = стоимость закупки: ${String.format("%.0f", n)} ₽",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("R = расходы по закупке: ${String.format("%.0f", r)} ₽",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -160,18 +146,14 @@ fun AddEditBatchDialog(
 
                 if (outputPercent > 0) {
                     Text("Выход: ${String.format("%.1f", outputPercent)}% от исходной массы",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary)
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                 }
 
                 HorizontalDivider()
                 Text("Себестоимость партии", style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
 
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = MaterialTheme.shapes.small
-                ) {
+                Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = MaterialTheme.shapes.small) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -179,21 +161,17 @@ fun AddEditBatchDialog(
                     ) {
                         Column {
                             Text("P = n + R = ${String.format("%.0f", n)} + ${String.format("%.0f", r)}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
                             Text("P (всего): ${String.format("%.2f", costPrice)} ₽",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
                             if (outputKg > 0) {
                                 Text("P за кг: ${String.format("%.2f", pPerKg)} ₽/кг",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium,
+                                    style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.primary)
                             }
                         }
                         Text("${String.format("%.2f", costPrice)} ₽",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary)
                     }
                 }
@@ -209,10 +187,7 @@ fun AddEditBatchDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                     listOf("10", "15", "20", "30").forEach { preset ->
                         AssistChip(
                             onClick = { marketPricePerPercent = preset },
@@ -223,10 +198,7 @@ fun AddEditBatchDialog(
                 }
 
                 if (optimalPricePerKg != null) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = MaterialTheme.shapes.small
-                    ) {
+                    Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.small) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -234,22 +206,18 @@ fun AddEditBatchDialog(
                         ) {
                             Column {
                                 Text("So(за кг) = P(за кг) + v×h",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
                                 Text("${String.format("%.2f", pPerKg)} + ${String.format("%.1f", outputPercent)}×${String.format("%.0f", h)}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
                             }
                             Text("${String.format("%.2f", optimalPricePerKg)} ₽/кг",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.secondary)
                         }
                     }
                 }
 
                 HorizontalDivider()
-
                 AppDropdown(
                     label = "Статус",
                     selected = status,
@@ -264,11 +232,8 @@ fun AddEditBatchDialog(
                 outputError = outputKgText.toDoubleOrNull()?.let { it <= 0 } ?: true
                 if (!dateError && !outputError) {
                     onSave(
-                        formationDate,
-                        selectedPurchaseId.ifBlank { null },
-                        outputKgText.toDouble(),
-                        marketPricePerPercent.toDoubleOrNull() ?: 0.0,
-                        status
+                        formationDate, selectedPurchaseId.ifBlank { null },
+                        outputKgText.toDouble(), marketPricePerPercent.toDoubleOrNull() ?: 0.0, status
                     )
                 }
             }) { Text("Сохранить") }

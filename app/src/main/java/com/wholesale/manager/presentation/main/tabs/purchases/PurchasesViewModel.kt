@@ -15,16 +15,20 @@ data class PurchasesUiState(
     val batches: List<Batch> = emptyList(),
     val searchQuery: String = "",
     val statusFilter: String = "",
-    val isLoading: Boolean = false,
+    val sortNewest: Boolean = true,
     val showAddDialog: Boolean = false,
     val editingItem: PurchasedRaw? = null,
     val error: String? = null
 ) {
     val filtered: List<PurchasedRaw>
-        get() = items.filter { p ->
-            (searchQuery.isBlank() || p.supplierName.contains(searchQuery, ignoreCase = true) ||
-                    p.type.contains(searchQuery, ignoreCase = true)) &&
-                    (statusFilter.isBlank() || p.status == statusFilter)
+        get() {
+            val base = items.filter { p ->
+                (searchQuery.isBlank() || p.supplierName.contains(searchQuery, ignoreCase = true) ||
+                        p.type.contains(searchQuery, ignoreCase = true)) &&
+                        (statusFilter.isBlank() || p.status == statusFilter)
+            }
+            return if (sortNewest) base.sortedByDescending { it.purchaseDate }
+            else base.sortedBy { it.purchaseDate }
         }
 
     val nextPurchaseNumber: Int
@@ -39,10 +43,6 @@ class PurchasesViewModel(
     val state: StateFlow<PurchasesUiState> = _state.asStateFlow()
 
     init {
-        loadAll()
-    }
-
-    private fun loadAll() {
         viewModelScope.launch {
             useCases.getAll().collect { list -> _state.update { it.copy(items = list) } }
         }
@@ -53,6 +53,7 @@ class PurchasesViewModel(
 
     fun onSearchChanged(query: String) = _state.update { it.copy(searchQuery = query) }
     fun onStatusFilterChanged(status: String) = _state.update { it.copy(statusFilter = status) }
+    fun toggleSort() = _state.update { it.copy(sortNewest = !it.sortNewest) }
     fun showAddDialog() = _state.update { it.copy(showAddDialog = true, editingItem = null) }
     fun showEditDialog(item: PurchasedRaw) = _state.update { it.copy(showAddDialog = true, editingItem = item) }
     fun dismissDialog() = _state.update { it.copy(showAddDialog = false, editingItem = null) }
@@ -66,11 +67,10 @@ class PurchasesViewModel(
             val now = Instant.now().toString()
             val pricePerKg = if (quantityKg > 0) purchasePriceTotal / quantityKg else 0.0
             if (existing == null) {
-                val number = _state.value.nextPurchaseNumber
                 useCases.create(
                     PurchasedRaw(
                         id = UUID.randomUUID().toString(),
-                        number = number,
+                        number = _state.value.nextPurchaseNumber,
                         lastModified = now,
                         type = type, quantityKg = quantityKg, purchasePriceTotal = purchasePriceTotal,
                         pricePerKg = pricePerKg, supplierName = supplierName,

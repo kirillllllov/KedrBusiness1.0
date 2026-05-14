@@ -7,6 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.wholesale.manager.domain.model.Batch
@@ -14,6 +15,7 @@ import com.wholesale.manager.domain.model.Order
 import com.wholesale.manager.presentation.common.AppDropdown
 import com.wholesale.manager.presentation.common.AppTextField
 import com.wholesale.manager.presentation.common.DatePickerField
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,6 +27,7 @@ fun AddEditOrderDialog(
              batchId: String, quantityKg: Double, pricePerKg: Double,
              shipmentDate: String?, deliveryMethod: String, status: String) -> Unit
 ) {
+    val today = LocalDate.now().toString()
     var customerName by remember { mutableStateOf(editing?.customerName ?: "") }
     var customerPhone by remember { mutableStateOf(editing?.customerPhone ?: "") }
     var customerAddress by remember { mutableStateOf(editing?.customerAddress ?: "") }
@@ -32,7 +35,7 @@ fun AddEditOrderDialog(
     var batchDropdownExpanded by remember { mutableStateOf(false) }
     var quantityKg by remember { mutableStateOf(editing?.quantityKg?.toString() ?: "") }
     var pricePerKg by remember { mutableStateOf(editing?.pricePerKg?.toString() ?: "") }
-    var shipmentDate by remember { mutableStateOf(editing?.shipmentDate ?: "") }
+    var shipmentDate by remember { mutableStateOf(editing?.shipmentDate ?: today) }
     var deliveryMethod by remember { mutableStateOf(editing?.deliveryMethod ?: Order.DELIVERY_PICKUP) }
     var status by remember { mutableStateOf(editing?.status ?: Order.STATUS_NEW) }
 
@@ -42,7 +45,7 @@ fun AddEditOrderDialog(
     var priceError by remember { mutableStateOf(false) }
 
     val selectedBatch = availableBatches.find { it.id == batchId }
-    val availableKg = selectedBatch?.let { it.rawQuantityKg * it.outputPercent / 100.0 }
+    val availableKg = selectedBatch?.outputKg ?: 0.0
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -82,9 +85,7 @@ fun AddEditOrderDialog(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Партия *") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = batchDropdownExpanded)
-                        },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = batchDropdownExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
                     ExposedDropdownMenu(
@@ -92,19 +93,35 @@ fun AddEditOrderDialog(
                         onDismissRequest = { batchDropdownExpanded = false }
                     ) {
                         availableBatches.forEach { batch ->
-                            val outputKg = batch.rawQuantityKg * batch.outputPercent / 100.0
                             DropdownMenuItem(
                                 text = {
                                     Column {
-                                        Text("Партия №${batch.number} · ${batchStatusLabel(batch.status)}",
-                                            style = MaterialTheme.typography.bodyMedium)
-                                        Text("${batch.formationDate} · Выход: ${String.format("%.1f", outputKg)} кг · ${batch.outputPercent}%",
+                                        Text(
+                                            "Партия №${batch.number} · ${batchStatusLabel(batch.status)}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            "${batch.formationDate} · Выход: ${batch.outputKg} кг · ${batch.outputPercent}%",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.outline)
+                                            color = MaterialTheme.colorScheme.outline
+                                        )
+                                        batch.optimalPricePerKg?.let { so ->
+                                            Text(
+                                                "Оптим. стоим.: ${String.format("%.2f", so)} ₽/кг",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
                                     }
                                 },
                                 onClick = {
                                     batchId = batch.id
+                                    if (editing == null) {
+                                        batch.optimalPricePerKg?.let {
+                                            pricePerKg = String.format("%.2f", it)
+                                        }
+                                    }
                                     batchDropdownExpanded = false
                                 }
                             )
@@ -112,7 +129,7 @@ fun AddEditOrderDialog(
                     }
                 }
 
-                if (availableKg != null) {
+                if (availableKg > 0) {
                     Text(
                         "Доступно: ${String.format("%.1f", availableKg)} кг",
                         style = MaterialTheme.typography.bodySmall,
@@ -134,7 +151,7 @@ fun AddEditOrderDialog(
                 )
 
                 DatePickerField(
-                    label = "Дата отгрузки (опц.)",
+                    label = "Дата отгрузки",
                     value = shipmentDate,
                     onValueChange = { shipmentDate = it }
                 )
@@ -154,9 +171,7 @@ fun AddEditOrderDialog(
                     selected = status,
                     options = listOf(
                         Order.STATUS_NEW to "Новый",
-                        Order.STATUS_CONFIRMED to "Подтверждён",
-                        Order.STATUS_SHIPPED to "Отправлен",
-                        Order.STATUS_DELIVERED to "Доставлен",
+                        Order.STATUS_COMPLETED to "Выполнен",
                         Order.STATUS_CANCELLED to "Отменён"
                     ),
                     onSelected = { status = it }

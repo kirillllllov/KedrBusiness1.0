@@ -14,7 +14,7 @@ sealed class BottomNavItem(
     object Batches : BottomNavItem("batches", "Партии", Icons.Filled.Inventory)
     object Expenses : BottomNavItem("expenses", "Расходы", Icons.Filled.AttachMoney)
     object Orders : BottomNavItem("orders", "Заказы", Icons.Filled.Receipt)
-    object Users : BottomNavItem("users", "Доступы", Icons.Filled.People)
+    object Users : BottomNavItem("users", "Персонал", Icons.Filled.People)
 
     companion object {
         fun forRole(role: String): List<BottomNavItem> = when (role) {

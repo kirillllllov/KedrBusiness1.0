@@ -15,14 +15,19 @@ data class ExpensesUiState(
     val purchases: List<PurchasedRaw> = emptyList(),
     val searchQuery: String = "",
     val typeFilter: String = "",
+    val sortNewest: Boolean = true,
     val showAddDialog: Boolean = false,
     val editingItem: Expense? = null
 ) {
     val filtered: List<Expense>
-        get() = items.filter { e ->
-            (searchQuery.isBlank() || (e.description?.contains(searchQuery, ignoreCase = true) == true) ||
-                    e.type.contains(searchQuery, ignoreCase = true)) &&
-                    (typeFilter.isBlank() || e.type == typeFilter)
+        get() {
+            val base = items.filter { e ->
+                (searchQuery.isBlank() || (e.description?.contains(searchQuery, ignoreCase = true) == true) ||
+                        e.type.contains(searchQuery, ignoreCase = true)) &&
+                        (typeFilter.isBlank() || e.type == typeFilter)
+            }
+            return if (sortNewest) base.sortedByDescending { it.date }
+            else base.sortedBy { it.date }
         }
 
     val totalAmount: Double get() = filtered.sumOf { it.amount }
@@ -46,6 +51,7 @@ class ExpensesViewModel(
 
     fun onSearchChanged(query: String) = _state.update { it.copy(searchQuery = query) }
     fun onTypeFilterChanged(t: String) = _state.update { it.copy(typeFilter = t) }
+    fun toggleSort() = _state.update { it.copy(sortNewest = !it.sortNewest) }
     fun showAddDialog() = _state.update { it.copy(showAddDialog = true, editingItem = null) }
     fun showEditDialog(item: Expense) = _state.update { it.copy(showAddDialog = true, editingItem = item) }
     fun dismissDialog() = _state.update { it.copy(showAddDialog = false, editingItem = null) }

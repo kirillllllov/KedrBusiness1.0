@@ -21,10 +21,16 @@ fun DatePickerField(
 ) {
     var showPicker by remember { mutableStateOf(false) }
 
-    val initialMillis: Long? = remember(value) {
-        try {
-            LocalDate.parse(value).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-        } catch (e: Exception) { null }
+    val initialMillis: Long = remember(value) {
+        if (value.isBlank()) {
+            LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        } else {
+            try {
+                LocalDate.parse(value).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+            } catch (e: Exception) {
+                LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+            }
+        }
     }
 
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)

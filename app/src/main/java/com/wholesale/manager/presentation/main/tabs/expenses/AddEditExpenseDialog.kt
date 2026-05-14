@@ -14,6 +14,7 @@ import com.wholesale.manager.domain.model.Expense
 import com.wholesale.manager.domain.model.PurchasedRaw
 import com.wholesale.manager.presentation.common.AppTextField
 import com.wholesale.manager.presentation.common.DatePickerField
+import java.time.LocalDate
 
 private const val CUSTOM_TYPE_KEY = "__CUSTOM__"
 
@@ -25,6 +26,7 @@ fun AddEditExpenseDialog(
     onDismiss: () -> Unit,
     onSave: (type: String, amount: Double, date: String, description: String?, purchaseId: String?) -> Unit
 ) {
+    val today = LocalDate.now().toString()
     val predefinedTypes = listOf(
         Expense.TYPE_TRANSPORT to "Транспорт",
         Expense.TYPE_SALARY to "Зарплата / Грузчики",
@@ -47,7 +49,7 @@ fun AddEditExpenseDialog(
     var typeDropdownExpanded by remember { mutableStateOf(false) }
 
     var amount by remember { mutableStateOf(editing?.amount?.toString() ?: "") }
-    var date by remember { mutableStateOf(editing?.date ?: "") }
+    var date by remember { mutableStateOf(editing?.date ?: today) }
     var description by remember { mutableStateOf(editing?.description ?: "") }
     var selectedPurchaseId by remember { mutableStateOf(editing?.purchaseId ?: "") }
     var purchaseDropdownExpanded by remember { mutableStateOf(false) }
@@ -77,9 +79,7 @@ fun AddEditExpenseDialog(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Тип расхода") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeDropdownExpanded)
-                        },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeDropdownExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
                     ExposedDropdownMenu(
@@ -89,10 +89,7 @@ fun AddEditExpenseDialog(
                         predefinedTypes.forEach { (key, label) ->
                             DropdownMenuItem(
                                 text = { Text(label) },
-                                onClick = {
-                                    selectedTypeKey = key
-                                    typeDropdownExpanded = false
-                                }
+                                onClick = { selectedTypeKey = key; typeDropdownExpanded = false }
                             )
                         }
                     }
@@ -103,8 +100,7 @@ fun AddEditExpenseDialog(
                         value = customTypeText,
                         onValueChange = { customTypeText = it; customTypeError = false },
                         label = "Введите название типа *",
-                        isError = customTypeError,
-                        errorText = "Обязательное поле"
+                        isError = customTypeError, errorText = "Обязательное поле"
                     )
                 }
 
@@ -119,8 +115,7 @@ fun AddEditExpenseDialog(
                     label = "Дата *",
                     value = date,
                     onValueChange = { date = it; dateError = false },
-                    isError = dateError,
-                    errorText = "Обязательное поле"
+                    isError = dateError, errorText = "Обязательное поле"
                 )
 
                 AppTextField(
@@ -143,9 +138,7 @@ fun AddEditExpenseDialog(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Привязать к закупке (опц.)") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = purchaseDropdownExpanded)
-                        },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = purchaseDropdownExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
                     ExposedDropdownMenu(
@@ -154,31 +147,21 @@ fun AddEditExpenseDialog(
                     ) {
                         DropdownMenuItem(
                             text = { Text("Не выбрана") },
-                            onClick = {
-                                selectedPurchaseId = ""
-                                purchaseDropdownExpanded = false
-                            }
+                            onClick = { selectedPurchaseId = ""; purchaseDropdownExpanded = false }
                         )
                         availablePurchases.forEach { p ->
                             DropdownMenuItem(
                                 text = {
                                     Column {
-                                        Text(
-                                            "Закупка №${p.number} · ${p.type}",
+                                        Text("Закупка №${p.number} · ${p.type}",
                                             style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                        Text(
-                                            "${p.supplierName} · ${p.quantityKg} кг · ${p.purchaseDate}",
+                                            fontWeight = FontWeight.Medium)
+                                        Text("${p.supplierName} · ${p.quantityKg} кг · ${p.purchaseDate}",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.outline
-                                        )
+                                            color = MaterialTheme.colorScheme.outline)
                                     }
                                 },
-                                onClick = {
-                                    selectedPurchaseId = p.id
-                                    purchaseDropdownExpanded = false
-                                }
+                                onClick = { selectedPurchaseId = p.id; purchaseDropdownExpanded = false }
                             )
                         }
                     }
@@ -192,11 +175,8 @@ fun AddEditExpenseDialog(
                 customTypeError = selectedTypeKey == CUSTOM_TYPE_KEY && customTypeText.isBlank()
                 if (!amountError && !dateError && !customTypeError) {
                     val finalType = if (selectedTypeKey == CUSTOM_TYPE_KEY) customTypeText else selectedTypeKey
-                    onSave(
-                        finalType, amount.toDouble(), date,
-                        description.ifBlank { null },
-                        selectedPurchaseId.ifBlank { null }
-                    )
+                    onSave(finalType, amount.toDouble(), date, description.ifBlank { null },
+                        selectedPurchaseId.ifBlank { null })
                 }
             }) { Text("Сохранить") }
         },

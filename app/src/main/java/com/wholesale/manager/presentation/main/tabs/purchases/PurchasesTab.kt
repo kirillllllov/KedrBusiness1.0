@@ -54,8 +54,17 @@ fun PurchasesTab(viewModel: PurchasesViewModel, userRole: String) {
                 title = { Text("Закупки", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                )
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                actions = {
+                    IconButton(onClick = { viewModel.toggleSort() }) {
+                        Icon(
+                            if (state.sortNewest) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowUp,
+                            contentDescription = if (state.sortNewest) "Сначала новые" else "Сначала старые"
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {
@@ -101,18 +110,8 @@ fun PurchasesTab(viewModel: PurchasesViewModel, userRole: String) {
                             val dismissState = rememberSwipeToDismissBoxState(
                                 confirmValueChange = { value ->
                                     when (value) {
-                                        EndToStart -> {
-                                            if (Permissions.canDeletePurchase(userRole)) {
-                                                pendingDeleteId = item.id
-                                            }
-                                            false
-                                        }
-                                        StartToEnd -> {
-                                            if (Permissions.canEditPurchase(userRole)) {
-                                                viewModel.showEditDialog(item)
-                                            }
-                                            false
-                                        }
+                                        EndToStart -> { if (Permissions.canDeletePurchase(userRole)) pendingDeleteId = item.id; false }
+                                        StartToEnd -> { if (Permissions.canEditPurchase(userRole)) viewModel.showEditDialog(item); false }
                                         else -> false
                                     }
                                 }
@@ -161,8 +160,7 @@ fun PurchaseCard(item: PurchasedRaw, onClick: () -> Unit) {
                 InfoItem("Сумма", "${String.format("%.0f", item.purchasePriceTotal)} ₽")
             }
             Spacer(modifier = Modifier.height(4.dp))
-            Text(item.purchaseDate, style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.outline)
+            Text(item.purchaseDate, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
         }
     }
 }
@@ -170,8 +168,7 @@ fun PurchaseCard(item: PurchasedRaw, onClick: () -> Unit) {
 @Composable
 fun InfoItem(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.outline)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
         Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
     }
 }

@@ -53,8 +53,17 @@ fun ExpensesTab(viewModel: ExpensesViewModel, userRole: String) {
                 title = { Text("Расходы", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                )
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                actions = {
+                    IconButton(onClick = { viewModel.toggleSort() }) {
+                        Icon(
+                            if (state.sortNewest) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowUp,
+                            contentDescription = if (state.sortNewest) "Сначала новые" else "Сначала старые"
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {
@@ -122,15 +131,11 @@ fun ExpensesTab(viewModel: ExpensesViewModel, userRole: String) {
                                 confirmValueChange = { value ->
                                     when (value) {
                                         EndToStart -> {
-                                            if (Permissions.canDeleteExpense(userRole)) {
-                                                pendingDeleteId = item.id
-                                            }
+                                            if (Permissions.canDeleteExpense(userRole)) pendingDeleteId = item.id
                                             false
                                         }
                                         StartToEnd -> {
-                                            if (Permissions.canEditExpense(userRole)) {
-                                                viewModel.showEditDialog(item)
-                                            }
+                                            if (Permissions.canEditExpense(userRole)) viewModel.showEditDialog(item)
                                             false
                                         }
                                         else -> false
@@ -144,9 +149,7 @@ fun ExpensesTab(viewModel: ExpensesViewModel, userRole: String) {
                                     ExpenseCard(
                                         item = item,
                                         purchaseLabel = linkedPurchase?.let { "Закупка №${it.number} · ${it.type}" },
-                                        onClick = {
-                                            if (Permissions.canEditExpense(userRole)) viewModel.showEditDialog(item)
-                                        }
+                                        onClick = { if (Permissions.canEditExpense(userRole)) viewModel.showEditDialog(item) }
                                     )
                                 }
                             )
@@ -179,8 +182,7 @@ fun ExpenseCard(item: Expense, purchaseLabel: String?, onClick: () -> Unit) {
                     Text(it, style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
                 }
-                Text(item.date, style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline)
+                Text(item.date, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
                 if (purchaseLabel != null) {
                     Text(purchaseLabel, style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary)

@@ -1,8 +1,6 @@
 package com.wholesale.manager.presentation.main
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -35,7 +33,6 @@ fun MainScreen(authViewModel: AuthViewModel) {
     val context = LocalContext.current
     val authState by authViewModel.state.collectAsState()
     val userRole = authState.currentUser?.role ?: ""
-
     val navItems = BottomNavItem.forRole(userRole)
 
     val purchasesViewModel: PurchasesViewModel = viewModel(
@@ -69,6 +66,7 @@ fun MainScreen(authViewModel: AuthViewModel) {
     )
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         bottomBar = {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentDestination = navBackStackEntry?.destination
