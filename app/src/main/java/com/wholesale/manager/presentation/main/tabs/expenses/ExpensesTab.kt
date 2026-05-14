@@ -28,10 +28,10 @@ fun ExpensesTab(viewModel: ExpensesViewModel) {
     if (state.showAddDialog) {
         AddEditExpenseDialog(
             editing = state.editingItem,
-            availableBatches = state.batches,
+            availablePurchases = state.purchases,
             onDismiss = { viewModel.dismissDialog() },
-            onSave = { type, amount, date, description, batchIds ->
-                viewModel.save(type, amount, date, description, batchIds)
+            onSave = { type, amount, date, description, purchaseId ->
+                viewModel.save(type, amount, date, description, purchaseId)
             }
         )
     }
@@ -58,7 +58,9 @@ fun ExpensesTab(viewModel: ExpensesViewModel) {
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (state.filtered.isNotEmpty()) {
                 Surface(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -97,8 +99,11 @@ fun ExpensesTab(viewModel: ExpensesViewModel) {
             if (state.filtered.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Filled.AttachMoney, null, modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.outline)
+                        Icon(
+                            Icons.Filled.AttachMoney, null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.outline
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Нет расходов", color = MaterialTheme.colorScheme.outline)
                     }
@@ -109,6 +114,7 @@ fun ExpensesTab(viewModel: ExpensesViewModel) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(state.filtered, key = { it.id }) { item ->
+                        val linkedPurchase = state.purchases.find { it.id == item.purchaseId }
                         val dismissState = rememberSwipeToDismissBoxState(
                             confirmValueChange = { value ->
                                 when (value) {
@@ -121,7 +127,13 @@ fun ExpensesTab(viewModel: ExpensesViewModel) {
                         SwipeToDismissBox(
                             state = dismissState,
                             backgroundContent = { SwipeToDeleteBackground(dismissState) },
-                            content = { ExpenseCard(item, onClick = { viewModel.showEditDialog(item) }) }
+                            content = {
+                                ExpenseCard(
+                                    item = item,
+                                    purchaseLabel = linkedPurchase?.let { "Закупка №${it.number} · ${it.type}" },
+                                    onClick = { viewModel.showEditDialog(item) }
+                                )
+                            }
                         )
                     }
                 }
@@ -131,7 +143,7 @@ fun ExpensesTab(viewModel: ExpensesViewModel) {
 }
 
 @Composable
-fun ExpenseCard(item: Expense, onClick: () -> Unit) {
+fun ExpenseCard(item: Expense, purchaseLabel: String?, onClick: () -> Unit) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().animateContentSize(),
@@ -139,20 +151,39 @@ fun ExpenseCard(item: Expense, onClick: () -> Unit) {
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(expenseTypeLabel(item.type), fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.titleSmall)
+                Text(
+                    expenseTypeLabel(item.type),
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleSmall
+                )
                 item.description?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2
+                    )
                 }
-                Text(item.date, style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline)
+                Text(
+                    item.date,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+                if (purchaseLabel != null) {
+                    Text(
+                        purchaseLabel,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Text("${String.format("%.0f", item.amount)} ₽",
+            Text(
+                "${String.format("%.0f", item.amount)} ₽",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.error)
+                color = MaterialTheme.colorScheme.error
+            )
         }
     }
 }

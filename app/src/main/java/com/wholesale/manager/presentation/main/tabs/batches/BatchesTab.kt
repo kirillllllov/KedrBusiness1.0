@@ -30,11 +30,11 @@ fun BatchesTab(viewModel: BatchesViewModel) {
         AddEditBatchDialog(
             editing = editing,
             nextBatchNumber = state.nextBatchNumber,
-            initialPurchasePrice = state.linkedPurchasesSum(editing?.id),
-            initialExpensesTotal = state.linkedExpensesSum(editing?.id),
+            availablePurchases = state.allPurchases,
+            expensesForPurchase = { purchaseId -> state.expensesTotalForPurchase(purchaseId) },
             onDismiss = { viewModel.dismissDialog() },
-            onSave = { formationDate, rawQty, outputPct, purchasePrice, expensesTotal, marketPrice, status ->
-                viewModel.save(formationDate, rawQty, outputPct, purchasePrice, expensesTotal, marketPrice, status)
+            onSave = { formationDate, purchaseId, outputKg, marketPrice, status ->
+                viewModel.save(formationDate, purchaseId, outputKg, marketPrice, status)
             }
         )
     }
@@ -65,16 +65,22 @@ fun BatchesTab(viewModel: BatchesViewModel) {
                 placeholder = "Поиск по номеру партии..."
             )
             FilterChipRow(
-                options = listOf("" to "Все", Batch.STATUS_ACTIVE to "Активна",
-                    Batch.STATUS_SOLD_OUT to "Продана"),
+                options = listOf(
+                    "" to "Все",
+                    Batch.STATUS_ACTIVE to "Активна",
+                    Batch.STATUS_SOLD_OUT to "Продана"
+                ),
                 selected = state.statusFilter,
                 onSelected = viewModel::onStatusFilterChanged
             )
             if (state.filtered.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Filled.Inventory, null, modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.outline)
+                        Icon(
+                            Icons.Filled.Inventory, null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.outline
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Нет партий", color = MaterialTheme.colorScheme.outline)
                     }
@@ -85,6 +91,7 @@ fun BatchesTab(viewModel: BatchesViewModel) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(state.filtered, key = { it.id }) { item ->
+                        val linkedPurchase = state.allPurchases.find { it.id == item.purchaseId }
                         val dismissState = rememberSwipeToDismissBoxState(
                             confirmValueChange = { value ->
                                 when (value) {
@@ -97,7 +104,14 @@ fun BatchesTab(viewModel: BatchesViewModel) {
                         SwipeToDismissBox(
                             state = dismissState,
                             backgroundContent = { SwipeToDeleteBackground(dismissState) },
-                            content = { BatchCard(item, onClick = { viewModel.showEditDialog(item) }) }
+                            content = {
+                                BatchCard(
+                                    item = item,
+                                    purchaseInfo = linkedPurchase?.let { "Закупка №${it.number} · ${it.type}" },
+                                    expensesTotal = state.expensesTotalForPurchase(item.purchaseId),
+                                    onClick = { viewModel.showEditDialog(item) }
+                                )
+                            }
                         )
                     }
                 }
@@ -107,7 +121,12 @@ fun BatchesTab(viewModel: BatchesViewModel) {
 }
 
 @Composable
-fun BatchCard(item: Batch, onClick: () -> Unit) {
+fun BatchCard(
+    item: Batch,
+    purchaseInfo: String?,
+    expensesTotal: Double,
+    onClick: () -> Unit
+) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().animateContentSize(),
@@ -116,19 +135,65 @@ fun BatchCard(item: Batch, onClick: () -> Unit) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Партия №${item.number}", fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium)
-                    Text(item.formationDate, style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline)
+                    Text(
+                        "Партия №${item.number}",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        item.formationDate,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    if (purchaseInfo != null) {
+                        Text(
+                            purchaseInfo,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
                 BatchStatusChip(item.status)
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                BatchInfoItem("Сырьё", "${item.rawQuantityKg} кг")
-                BatchInfoItem("Выход", "${item.outputPercent}%")
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (item.rawQuantityKg > 0) {
+                    BatchInfoItem("Сырьё", "${item.rawQuantityKg} кг")
+                }
+                if (item.outputKg > 0) {
+                    BatchInfoItem("Выход", "${item.outputKg} кг")
+                }
+                if (item.outputPercent > 0) {
+                    BatchInfoItem("%", "${item.outputPercent}%")
+                }
                 BatchInfoItem("Себест.", "${String.format("%.0f", item.costPrice)} ₽")
-                item.optimalPricePerKg?.let { BatchInfoItem("Опт. цена", "${String.format("%.2f", it)} ₽") }
+                item.optimalPricePerKg?.let {
+                    BatchInfoItem("So", "${String.format("%.0f", it)} ₽")
+                }
+            }
+            if (expensesTotal > 0) {
+                Spacer(modifier = Modifier.height(6.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "Расходы по закупке:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    Text(
+                        "${String.format("%.0f", expensesTotal)} ₽",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }
@@ -137,8 +202,16 @@ fun BatchCard(item: Batch, onClick: () -> Unit) {
 @Composable
 fun BatchInfoItem(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
@@ -150,7 +223,12 @@ fun BatchStatusChip(status: String) {
         else -> status to Color.Gray
     }
     Surface(color = color.copy(alpha = 0.15f), shape = RoundedCornerShape(12.dp)) {
-        Text(label, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.labelSmall, color = color, fontWeight = FontWeight.SemiBold)
+        Text(
+            label,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }

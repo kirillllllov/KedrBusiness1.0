@@ -1,7 +1,5 @@
 package com.wholesale.manager.data.repository
 
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.wholesale.manager.data.local.dao.ExpenseDao
 import com.wholesale.manager.data.local.entity.ExpenseEntity
 import com.wholesale.manager.domain.model.Expense
@@ -11,9 +9,6 @@ import kotlinx.coroutines.flow.map
 import java.time.Instant
 
 class ExpenseRepositoryImpl(private val dao: ExpenseDao) : ExpenseRepository {
-
-    private val gson = Gson()
-    private val listType = object : TypeToken<List<String>>() {}.type
 
     override fun getAll(): Flow<List<Expense>> =
         dao.getAllNotDeleted().map { list -> list.map { it.toDomain() } }
@@ -28,18 +23,15 @@ class ExpenseRepositoryImpl(private val dao: ExpenseDao) : ExpenseRepository {
         dao.softDelete(id, Instant.now().toString())
     }
 
-    private fun ExpenseEntity.toDomain(): Expense {
-        val batchIds: List<String> = gson.fromJson(batchIdsJson, listType) ?: emptyList()
-        return Expense(
-            id = id, serverId = serverId, lastModified = lastModified, isDeleted = isDeleted,
-            type = type, amount = amount, date = date, description = description,
-            batchIds = batchIds
-        )
-    }
+    private fun ExpenseEntity.toDomain() = Expense(
+        id = id, serverId = serverId, lastModified = lastModified, isDeleted = isDeleted,
+        type = type, amount = amount, date = date, description = description,
+        purchaseId = purchaseId
+    )
 
     private fun Expense.toEntity() = ExpenseEntity(
         id = id, serverId = serverId, lastModified = lastModified, isDeleted = isDeleted,
         type = type, amount = amount, date = date, description = description,
-        batchIdsJson = gson.toJson(batchIds)
+        batchIdsJson = "[]", purchaseId = purchaseId
     )
 }

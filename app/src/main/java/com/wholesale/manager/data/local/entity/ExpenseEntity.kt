@@ -13,5 +13,6 @@ data class ExpenseEntity(
     val amount: Double,
     val date: String,
     val description: String? = null,
-    val batchIdsJson: String = "[]"
+    val batchIdsJson: String = "[]",
+    val purchaseId: String? = null
 )

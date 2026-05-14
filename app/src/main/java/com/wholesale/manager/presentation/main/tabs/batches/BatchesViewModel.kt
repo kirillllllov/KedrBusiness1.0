@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.UUID
+import kotlin.math.roundToInt
 
 data class BatchesUiState(
     val items: List<Batch> = emptyList(),
@@ -33,13 +34,12 @@ data class BatchesUiState(
             return (maxNum + 1).toString().padStart(3, '0')
         }
 
-    fun linkedPurchasesSum(batchId: String?): Double =
-        if (batchId == null) 0.0
-        else allPurchases.filter { it.batchId == batchId }.sumOf { it.purchasePriceTotal }
+    fun expensesTotalForPurchase(purchaseId: String?): Double =
+        if (purchaseId == null) 0.0
+        else allExpenses.filter { it.purchaseId == purchaseId }.sumOf { it.amount }
 
-    fun linkedExpensesSum(batchId: String?): Double =
-        if (batchId == null) 0.0
-        else allExpenses.filter { it.batchIds.contains(batchId) }.sumOf { it.amount }
+    fun purchaseById(purchaseId: String?): PurchasedRaw? =
+        allPurchases.find { it.id == purchaseId }
 }
 
 class BatchesViewModel(
@@ -70,29 +70,35 @@ class BatchesViewModel(
 
     fun save(
         formationDate: String,
-        rawQuantityKg: Double,
-        outputPercent: Int,
-        purchasePrice: Double,
-        expensesTotal: Double,
+        purchaseId: String?,
+        outputKg: Double,
         marketPricePerPercent: Double,
         status: String
     ) {
         viewModelScope.launch {
             val existing = _state.value.editingItem
             val now = Instant.now().toString()
-            val costPrice = purchasePrice + expensesTotal
+            val st = _state.value
+
+            val purchase = st.purchaseById(purchaseId)
+            val n = purchase?.purchasePriceTotal ?: 0.0
+            val rawQty = purchase?.quantityKg ?: 0.0
+            val r = st.expensesTotalForPurchase(purchaseId)
+            val costPrice = n + r
+            val outputPercent = if (rawQty > 0) (outputKg / rawQty * 100).roundToInt() else 0
             val optimalPricePerKg = if (marketPricePerPercent > 0)
                 costPrice + outputPercent * marketPricePerPercent
             else null
 
             if (existing == null) {
-                val number = _state.value.nextBatchNumber
                 useCases.create(
                     Batch(
                         id = UUID.randomUUID().toString(),
-                        number = number,
+                        number = st.nextBatchNumber,
                         formationDate = formationDate,
-                        rawQuantityKg = rawQuantityKg,
+                        purchaseId = purchaseId,
+                        rawQuantityKg = rawQty,
+                        outputKg = outputKg,
                         outputPercent = outputPercent,
                         costPrice = costPrice,
                         optimalPricePerKg = optimalPricePerKg,
@@ -104,7 +110,9 @@ class BatchesViewModel(
                 useCases.update(
                     existing.copy(
                         formationDate = formationDate,
-                        rawQuantityKg = rawQuantityKg,
+                        purchaseId = purchaseId,
+                        rawQuantityKg = rawQty,
+                        outputKg = outputKg,
                         outputPercent = outputPercent,
                         costPrice = costPrice,
                         optimalPricePerKg = optimalPricePerKg,

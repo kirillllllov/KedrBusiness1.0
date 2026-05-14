@@ -25,7 +25,8 @@ class BatchRepositoryImpl(private val dao: BatchDao) : BatchRepository {
 
     private fun BatchEntity.toDomain() = Batch(
         id = id, serverId = serverId, number = number,
-        formationDate = formationDate, rawQuantityKg = rawQuantityKg,
+        formationDate = formationDate, purchaseId = purchaseId,
+        rawQuantityKg = rawQuantityKg, outputKg = outputKg,
         outputPercent = outputPercent, costPrice = costPrice,
         optimalPricePerKg = optimalPricePerKg, status = status,
         lastModified = lastModified, isDeleted = isDeleted
@@ -33,7 +34,8 @@ class BatchRepositoryImpl(private val dao: BatchDao) : BatchRepository {
 
     private fun Batch.toEntity() = BatchEntity(
         id = id, serverId = serverId, number = number,
-        formationDate = formationDate, rawQuantityKg = rawQuantityKg,
+        formationDate = formationDate, purchaseId = purchaseId,
+        rawQuantityKg = rawQuantityKg, outputKg = outputKg,
         outputPercent = outputPercent, costPrice = costPrice,
         optimalPricePerKg = optimalPricePerKg, status = status,
         lastModified = lastModified, isDeleted = isDeleted

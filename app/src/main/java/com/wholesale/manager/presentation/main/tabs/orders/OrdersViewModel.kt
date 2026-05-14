@@ -93,14 +93,14 @@ class OrdersViewModel(
         now: String
     ) {
         val batch = _state.value.batches.find { it.id == batchId } ?: return
-        val availableKg = batch.rawQuantityKg * batch.outputPercent / 100.0
+        val availableKg = batch.outputKg
 
         val totalOrdered = _state.value.items
             .filter { it.batchId == batchId && it.status != Order.STATUS_CANCELLED }
             .filter { it.id != existingOrderId }
             .sumOf { it.quantityKg } + newQuantityKg
 
-        if (totalOrdered >= availableKg && batch.status != Batch.STATUS_SOLD_OUT) {
+        if (totalOrdered >= availableKg && availableKg > 0 && batch.status != Batch.STATUS_SOLD_OUT) {
             batchUseCases.update(batch.copy(status = Batch.STATUS_SOLD_OUT, lastModified = now))
         } else if (totalOrdered < availableKg && batch.status == Batch.STATUS_SOLD_OUT) {
             batchUseCases.update(batch.copy(status = Batch.STATUS_ACTIVE, lastModified = now))

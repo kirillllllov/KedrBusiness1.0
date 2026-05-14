@@ -9,7 +9,7 @@ data class Expense(
     val amount: Double,
     val date: String,
     val description: String? = null,
-    val batchIds: List<String> = emptyList()
+    val purchaseId: String? = null
 ) {
     companion object {
         const val TYPE_TRANSPORT = "TRANSPORT"

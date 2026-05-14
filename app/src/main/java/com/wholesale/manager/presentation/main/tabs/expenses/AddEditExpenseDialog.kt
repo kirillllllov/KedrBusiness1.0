@@ -7,10 +7,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.wholesale.manager.domain.model.Batch
 import com.wholesale.manager.domain.model.Expense
+import com.wholesale.manager.domain.model.PurchasedRaw
 import com.wholesale.manager.presentation.common.AppTextField
 import com.wholesale.manager.presentation.common.DatePickerField
 
@@ -20,22 +21,21 @@ private const val CUSTOM_TYPE_KEY = "__CUSTOM__"
 @Composable
 fun AddEditExpenseDialog(
     editing: Expense?,
-    availableBatches: List<Batch>,
+    availablePurchases: List<PurchasedRaw>,
     onDismiss: () -> Unit,
-    onSave: (type: String, amount: Double, date: String, description: String?, batchIds: List<String>) -> Unit
+    onSave: (type: String, amount: Double, date: String, description: String?, purchaseId: String?) -> Unit
 ) {
     val predefinedTypes = listOf(
         Expense.TYPE_TRANSPORT to "Транспорт",
-        Expense.TYPE_SALARY to "Зарплата",
-        Expense.TYPE_UTILITY to "Коммунальные",
-        Expense.TYPE_EQUIPMENT to "Оборудование",
+        Expense.TYPE_SALARY to "Зарплата / Грузчики",
+        Expense.TYPE_UTILITY to "Электроэнергия",
+        Expense.TYPE_EQUIPMENT to "Тех. обслуживание / Оборудование",
         Expense.TYPE_OTHER to "Прочее",
         CUSTOM_TYPE_KEY to "Свой тип..."
     )
 
     val editingTypeIsCustom = editing?.type != null &&
-            predefinedTypes.none { it.first == editing.type } &&
-            editing.type != CUSTOM_TYPE_KEY
+            predefinedTypes.none { it.first == editing.type }
 
     var selectedTypeKey by remember {
         mutableStateOf(
@@ -49,11 +49,8 @@ fun AddEditExpenseDialog(
     var amount by remember { mutableStateOf(editing?.amount?.toString() ?: "") }
     var date by remember { mutableStateOf(editing?.date ?: "") }
     var description by remember { mutableStateOf(editing?.description ?: "") }
-
-    var selectedBatchId by remember {
-        mutableStateOf(editing?.batchIds?.firstOrNull() ?: "")
-    }
-    var batchDropdownExpanded by remember { mutableStateOf(false) }
+    var selectedPurchaseId by remember { mutableStateOf(editing?.purchaseId ?: "") }
+    var purchaseDropdownExpanded by remember { mutableStateOf(false) }
 
     var amountError by remember { mutableStateOf(false) }
     var dateError by remember { mutableStateOf(false) }
@@ -133,42 +130,54 @@ fun AddEditExpenseDialog(
                 )
 
                 ExposedDropdownMenuBox(
-                    expanded = batchDropdownExpanded,
-                    onExpandedChange = { batchDropdownExpanded = it }
+                    expanded = purchaseDropdownExpanded,
+                    onExpandedChange = { purchaseDropdownExpanded = it }
                 ) {
-                    val batchDisplayName = availableBatches.find { it.id == selectedBatchId }
-                        ?.let { "Партия №${it.number} (${it.formationDate})" }
-                        ?: if (selectedBatchId.isBlank()) "Не выбрана" else selectedBatchId
+                    val selectedPurchase = availablePurchases.find { it.id == selectedPurchaseId }
+                    val purchaseDisplay = selectedPurchase?.let {
+                        "Закупка №${it.number} · ${it.type} · ${it.purchaseDate}"
+                    } ?: if (selectedPurchaseId.isBlank()) "Не выбрана" else selectedPurchaseId
 
                     OutlinedTextField(
-                        value = batchDisplayName,
+                        value = purchaseDisplay,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Партия (опц.)") },
+                        label = { Text("Привязать к закупке (опц.)") },
                         trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = batchDropdownExpanded)
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = purchaseDropdownExpanded)
                         },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
                     ExposedDropdownMenu(
-                        expanded = batchDropdownExpanded,
-                        onDismissRequest = { batchDropdownExpanded = false }
+                        expanded = purchaseDropdownExpanded,
+                        onDismissRequest = { purchaseDropdownExpanded = false }
                     ) {
                         DropdownMenuItem(
                             text = { Text("Не выбрана") },
                             onClick = {
-                                selectedBatchId = ""
-                                batchDropdownExpanded = false
+                                selectedPurchaseId = ""
+                                purchaseDropdownExpanded = false
                             }
                         )
-                        availableBatches.forEach { batch ->
+                        availablePurchases.forEach { p ->
                             DropdownMenuItem(
                                 text = {
-                                    Text("Партия №${batch.number} · ${batch.formationDate} · ${batchStatusLabel(batch.status)}")
+                                    Column {
+                                        Text(
+                                            "Закупка №${p.number} · ${p.type}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            "${p.supplierName} · ${p.quantityKg} кг · ${p.purchaseDate}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.outline
+                                        )
+                                    }
                                 },
                                 onClick = {
-                                    selectedBatchId = batch.id
-                                    batchDropdownExpanded = false
+                                    selectedPurchaseId = p.id
+                                    purchaseDropdownExpanded = false
                                 }
                             )
                         }
@@ -183,17 +192,14 @@ fun AddEditExpenseDialog(
                 customTypeError = selectedTypeKey == CUSTOM_TYPE_KEY && customTypeText.isBlank()
                 if (!amountError && !dateError && !customTypeError) {
                     val finalType = if (selectedTypeKey == CUSTOM_TYPE_KEY) customTypeText else selectedTypeKey
-                    val ids = if (selectedBatchId.isNotBlank()) listOf(selectedBatchId) else emptyList()
-                    onSave(finalType, amount.toDouble(), date, description.ifBlank { null }, ids)
+                    onSave(
+                        finalType, amount.toDouble(), date,
+                        description.ifBlank { null },
+                        selectedPurchaseId.ifBlank { null }
+                    )
                 }
             }) { Text("Сохранить") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } }
     )
-}
-
-private fun batchStatusLabel(status: String) = when (status) {
-    "ACTIVE" -> "Активна"
-    "SOLD_OUT" -> "Продана"
-    else -> status
 }

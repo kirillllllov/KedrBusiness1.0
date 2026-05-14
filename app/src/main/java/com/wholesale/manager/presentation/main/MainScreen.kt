@@ -46,7 +46,7 @@ fun MainScreen() {
     val expensesViewModel: ExpensesViewModel = viewModel(
         factory = ExpensesViewModelFactory(
             AppModule.provideExpenseUseCases(context),
-            AppModule.provideBatchUseCases(context)
+            AppModule.providePurchaseUseCases(context)
         )
     )
     val ordersViewModel: OrdersViewModel = viewModel(
