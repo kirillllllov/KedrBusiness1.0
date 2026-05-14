@@ -1,11 +1,9 @@
 package com.wholesale.manager.presentation.main
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Inventory
-import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.wholesale.manager.domain.model.User
 
 sealed class BottomNavItem(
     val route: String,
@@ -16,8 +14,14 @@ sealed class BottomNavItem(
     object Batches : BottomNavItem("batches", "Партии", Icons.Filled.Inventory)
     object Expenses : BottomNavItem("expenses", "Расходы", Icons.Filled.AttachMoney)
     object Orders : BottomNavItem("orders", "Заказы", Icons.Filled.Receipt)
+    object Users : BottomNavItem("users", "Доступы", Icons.Filled.People)
 
     companion object {
-        val all = listOf(Purchases, Batches, Expenses, Orders)
+        fun forRole(role: String): List<BottomNavItem> = when (role) {
+            User.ROLE_DIRECTOR -> listOf(Purchases, Batches, Expenses, Orders, Users)
+            User.ROLE_ADMIN -> listOf(Purchases, Batches, Expenses, Orders)
+            User.ROLE_EXECUTOR -> listOf(Orders)
+            else -> listOf(Orders)
+        }
     }
 }

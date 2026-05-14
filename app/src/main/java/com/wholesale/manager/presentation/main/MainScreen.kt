@@ -12,6 +12,10 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import com.wholesale.manager.di.AppModule
+import com.wholesale.manager.presentation.auth.AuthViewModel
+import com.wholesale.manager.presentation.auth.UsersScreen
+import com.wholesale.manager.presentation.auth.UsersViewModel
+import com.wholesale.manager.presentation.auth.UsersViewModelFactory
 import com.wholesale.manager.presentation.main.tabs.batches.BatchesTab
 import com.wholesale.manager.presentation.main.tabs.batches.BatchesViewModel
 import com.wholesale.manager.presentation.main.tabs.batches.BatchesViewModelFactory
@@ -26,9 +30,13 @@ import com.wholesale.manager.presentation.main.tabs.purchases.PurchasesViewModel
 import com.wholesale.manager.presentation.main.tabs.purchases.PurchasesViewModelFactory
 
 @Composable
-fun MainScreen() {
+fun MainScreen(authViewModel: AuthViewModel) {
     val navController = rememberNavController()
     val context = LocalContext.current
+    val authState by authViewModel.state.collectAsState()
+    val userRole = authState.currentUser?.role ?: ""
+
+    val navItems = BottomNavItem.forRole(userRole)
 
     val purchasesViewModel: PurchasesViewModel = viewModel(
         factory = PurchasesViewModelFactory(
@@ -40,7 +48,8 @@ fun MainScreen() {
         factory = BatchesViewModelFactory(
             AppModule.provideBatchUseCases(context),
             AppModule.providePurchaseUseCases(context),
-            AppModule.provideExpenseUseCases(context)
+            AppModule.provideExpenseUseCases(context),
+            AppModule.provideOrderUseCases(context)
         )
     )
     val expensesViewModel: ExpensesViewModel = viewModel(
@@ -55,13 +64,16 @@ fun MainScreen() {
             AppModule.provideBatchUseCases(context)
         )
     )
+    val usersViewModel: UsersViewModel = viewModel(
+        factory = UsersViewModelFactory(AppModule.provideUserUseCases(context))
+    )
 
     Scaffold(
         bottomBar = {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentDestination = navBackStackEntry?.destination
             NavigationBar {
-                BottomNavItem.all.forEach { item ->
+                navItems.forEach { item ->
                     NavigationBarItem(
                         icon = { Icon(item.icon, contentDescription = item.title) },
                         label = { Text(item.title) },
@@ -83,19 +95,22 @@ fun MainScreen() {
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             NavHost(
                 navController = navController,
-                startDestination = BottomNavItem.Purchases.route
+                startDestination = navItems.firstOrNull()?.route ?: BottomNavItem.Orders.route
             ) {
                 composable(BottomNavItem.Purchases.route) {
-                    PurchasesTab(viewModel = purchasesViewModel)
+                    PurchasesTab(viewModel = purchasesViewModel, userRole = userRole)
                 }
                 composable(BottomNavItem.Batches.route) {
-                    BatchesTab(viewModel = batchesViewModel)
+                    BatchesTab(viewModel = batchesViewModel, userRole = userRole)
                 }
                 composable(BottomNavItem.Expenses.route) {
-                    ExpensesTab(viewModel = expensesViewModel)
+                    ExpensesTab(viewModel = expensesViewModel, userRole = userRole)
                 }
                 composable(BottomNavItem.Orders.route) {
-                    OrdersTab(viewModel = ordersViewModel)
+                    OrdersTab(viewModel = ordersViewModel, userRole = userRole)
+                }
+                composable(BottomNavItem.Users.route) {
+                    UsersScreen(viewModel = usersViewModel)
                 }
             }
         }

@@ -8,15 +8,19 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.wholesale.manager.data.local.dao.*
 import com.wholesale.manager.data.local.entity.*
+import com.wholesale.manager.domain.model.User
+import java.security.MessageDigest
+import java.util.UUID
 
 @Database(
     entities = [
         BatchEntity::class,
         PurchasedRawEntity::class,
         OrderEntity::class,
-        ExpenseEntity::class
+        ExpenseEntity::class,
+        UserEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -24,6 +28,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun purchasedRawDao(): PurchasedRawDao
     abstract fun orderDao(): OrderDao
     abstract fun expenseDao(): ExpenseDao
+    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile
@@ -43,6 +48,44 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """CREATE TABLE IF NOT EXISTS users (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        username TEXT NOT NULL,
+                        passwordHash TEXT NOT NULL,
+                        role TEXT NOT NULL,
+                        displayName TEXT NOT NULL
+                    )"""
+                )
+                val hash = hashPassword("director123")
+                val id = UUID.randomUUID().toString()
+                db.execSQL(
+                    "INSERT OR IGNORE INTO users (id, username, passwordHash, role, displayName) " +
+                            "VALUES ('$id', 'director', '$hash', '${User.ROLE_DIRECTOR}', 'Директор')"
+                )
+            }
+        }
+
+        private val DB_CREATE_CALLBACK = object : Callback() {
+            override fun onCreate(db: SupportSQLiteDatabase) {
+                super.onCreate(db)
+                val hash = hashPassword("director123")
+                val id = UUID.randomUUID().toString()
+                db.execSQL(
+                    "INSERT OR IGNORE INTO users (id, username, passwordHash, role, displayName) " +
+                            "VALUES ('$id', 'director', '$hash', '${User.ROLE_DIRECTOR}', 'Директор')"
+                )
+            }
+        }
+
+        fun hashPassword(password: String): String {
+            val md = MessageDigest.getInstance("SHA-256")
+            val bytes = md.digest(password.toByteArray())
+            return bytes.joinToString("") { "%02x".format(it) }
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(
@@ -50,7 +93,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "wholesale_manager.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addCallback(DB_CREATE_CALLBACK)
                     .build().also { INSTANCE = it }
             }
         }

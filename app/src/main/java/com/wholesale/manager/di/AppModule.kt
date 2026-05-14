@@ -8,6 +8,7 @@ import com.wholesale.manager.domain.usecase.batch.*
 import com.wholesale.manager.domain.usecase.purchase.*
 import com.wholesale.manager.domain.usecase.order.*
 import com.wholesale.manager.domain.usecase.expense.*
+import com.wholesale.manager.domain.usecase.user.*
 
 object AppModule {
     private var db: AppDatabase? = null
@@ -27,6 +28,9 @@ object AppModule {
 
     fun provideExpenseRepository(context: Context): ExpenseRepository =
         ExpenseRepositoryImpl(getDatabase(context).expenseDao())
+
+    fun provideUserRepository(context: Context): UserRepository =
+        UserRepositoryImpl(getDatabase(context).userDao())
 
     fun provideBatchUseCases(context: Context): BatchUseCases {
         val repo = provideBatchRepository(context)
@@ -71,6 +75,18 @@ object AppModule {
             delete = DeleteExpenseUseCase(repo)
         )
     }
+
+    fun provideUserUseCases(context: Context): UserUseCases {
+        val repo = provideUserRepository(context)
+        return UserUseCases(
+            getAll = GetAllUsersUseCase(repo),
+            getByUsername = GetUserByUsernameUseCase(repo),
+            create = CreateUserUseCase(repo),
+            update = UpdateUserUseCase(repo),
+            delete = DeleteUserUseCase(repo),
+            countDirectors = CountDirectorsUseCase(repo)
+        )
+    }
 }
 
 data class BatchUseCases(
@@ -103,4 +119,13 @@ data class ExpenseUseCases(
     val create: CreateExpenseUseCase,
     val update: UpdateExpenseUseCase,
     val delete: DeleteExpenseUseCase
+)
+
+data class UserUseCases(
+    val getAll: GetAllUsersUseCase,
+    val getByUsername: GetUserByUsernameUseCase,
+    val create: CreateUserUseCase,
+    val update: UpdateUserUseCase,
+    val delete: DeleteUserUseCase,
+    val countDirectors: CountDirectorsUseCase
 )

@@ -16,19 +16,29 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.wholesale.manager.domain.model.Batch
+import com.wholesale.manager.presentation.auth.Permissions
+import com.wholesale.manager.presentation.common.ConfirmDeleteDialog
 import com.wholesale.manager.presentation.common.FilterChipRow
 import com.wholesale.manager.presentation.common.SearchBar
 import com.wholesale.manager.presentation.common.SwipeToDeleteBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BatchesTab(viewModel: BatchesViewModel) {
+fun BatchesTab(viewModel: BatchesViewModel, userRole: String) {
     val state by viewModel.state.collectAsState()
+    var pendingDeleteId by remember { mutableStateOf<String?>(null) }
+
+    if (pendingDeleteId != null) {
+        ConfirmDeleteDialog(
+            message = "Партия будет удалена. Это действие нельзя отменить.",
+            onConfirm = { viewModel.delete(pendingDeleteId!!); pendingDeleteId = null },
+            onDismiss = { pendingDeleteId = null }
+        )
+    }
 
     if (state.showAddDialog) {
-        val editing = state.editingItem
         AddEditBatchDialog(
-            editing = editing,
+            editing = state.editingItem,
             nextBatchNumber = state.nextBatchNumber,
             availablePurchases = state.allPurchases,
             expensesForPurchase = { purchaseId -> state.expensesTotalForPurchase(purchaseId) },
@@ -50,11 +60,13 @@ fun BatchesTab(viewModel: BatchesViewModel) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.showAddDialog() },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "Добавить", tint = Color.White)
+            if (Permissions.canCreateBatch(userRole)) {
+                FloatingActionButton(
+                    onClick = { viewModel.showAddDialog() },
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "Добавить", tint = Color.White)
+                }
             }
         }
     ) { padding ->
@@ -76,11 +88,8 @@ fun BatchesTab(viewModel: BatchesViewModel) {
             if (state.filtered.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Filled.Inventory, null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.outline
-                        )
+                        Icon(Icons.Filled.Inventory, null,
+                            modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Нет партий", color = MaterialTheme.colorScheme.outline)
                     }
@@ -92,27 +101,52 @@ fun BatchesTab(viewModel: BatchesViewModel) {
                 ) {
                     items(state.filtered, key = { it.id }) { item ->
                         val linkedPurchase = state.allPurchases.find { it.id == item.purchaseId }
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = { value ->
-                                when (value) {
-                                    EndToStart -> { viewModel.delete(item.id); true }
-                                    StartToEnd -> { viewModel.showEditDialog(item); false }
-                                    else -> false
+                        val remaining = state.remainingKg(item.id, item.outputKg)
+
+                        if (Permissions.canDeleteBatch(userRole) || Permissions.canEditBatch(userRole)) {
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = { value ->
+                                    when (value) {
+                                        EndToStart -> {
+                                            if (Permissions.canDeleteBatch(userRole)) {
+                                                pendingDeleteId = item.id
+                                            }
+                                            false
+                                        }
+                                        StartToEnd -> {
+                                            if (Permissions.canEditBatch(userRole)) {
+                                                viewModel.showEditDialog(item)
+                                            }
+                                            false
+                                        }
+                                        else -> false
+                                    }
                                 }
-                            }
-                        )
-                        SwipeToDismissBox(
-                            state = dismissState,
-                            backgroundContent = { SwipeToDeleteBackground(dismissState) },
-                            content = {
-                                BatchCard(
-                                    item = item,
-                                    purchaseInfo = linkedPurchase?.let { "Закупка №${it.number} · ${it.type}" },
-                                    expensesTotal = state.expensesTotalForPurchase(item.purchaseId),
-                                    onClick = { viewModel.showEditDialog(item) }
-                                )
-                            }
-                        )
+                            )
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                backgroundContent = { SwipeToDeleteBackground(dismissState) },
+                                content = {
+                                    BatchCard(
+                                        item = item,
+                                        purchaseInfo = linkedPurchase?.let { "Закупка №${it.number} · ${it.type}" },
+                                        expensesTotal = state.expensesTotalForPurchase(item.purchaseId),
+                                        remainingKg = remaining,
+                                        onClick = {
+                                            if (Permissions.canEditBatch(userRole)) viewModel.showEditDialog(item)
+                                        }
+                                    )
+                                }
+                            )
+                        } else {
+                            BatchCard(
+                                item = item,
+                                purchaseInfo = linkedPurchase?.let { "Закупка №${it.number} · ${it.type}" },
+                                expensesTotal = state.expensesTotalForPurchase(item.purchaseId),
+                                remainingKg = remaining,
+                                onClick = {}
+                            )
+                        }
                     }
                 }
             }
@@ -125,6 +159,7 @@ fun BatchCard(
     item: Batch,
     purchaseInfo: String?,
     expensesTotal: Double,
+    remainingKg: Double,
     onClick: () -> Unit
 ) {
     Card(
@@ -135,22 +170,13 @@ fun BatchCard(
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        "Партия №${item.number}",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        item.formationDate,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
+                    Text("Партия №${item.number}", fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium)
+                    Text(item.formationDate, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline)
                     if (purchaseInfo != null) {
-                        Text(
-                            purchaseInfo,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Text(purchaseInfo, style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary)
                     }
                 }
                 BatchStatusChip(item.status)
@@ -160,18 +186,32 @@ fun BatchCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                if (item.rawQuantityKg > 0) {
-                    BatchInfoItem("Сырьё", "${item.rawQuantityKg} кг")
-                }
-                if (item.outputKg > 0) {
-                    BatchInfoItem("Выход", "${item.outputKg} кг")
-                }
-                if (item.outputPercent > 0) {
-                    BatchInfoItem("%", "${item.outputPercent}%")
-                }
+                if (item.rawQuantityKg > 0) BatchInfoItem("Сырьё", "${item.rawQuantityKg} кг")
+                if (item.outputKg > 0) BatchInfoItem("Выход", "${item.outputKg} кг")
+                if (item.outputPercent > 0) BatchInfoItem("%", "${item.outputPercent}%")
                 BatchInfoItem("Себест.", "${String.format("%.0f", item.costPrice)} ₽")
-                item.optimalPricePerKg?.let {
-                    BatchInfoItem("So", "${String.format("%.0f", it)} ₽")
+                item.optimalPricePerKg?.let { BatchInfoItem("Оптим. стоим.", "${String.format("%.0f", it)} ₽/кг") }
+            }
+            if (item.outputKg > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    color = if (remainingKg > 0) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Остаток:", style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${String.format("%.1f", remainingKg)} кг",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (remainingKg > 0) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.outline)
+                    }
                 }
             }
             if (expensesTotal > 0) {
@@ -182,17 +222,11 @@ fun BatchCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        "Расходы по закупке:",
+                    Text("Расходы по закупке:", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline)
+                    Text("${String.format("%.0f", expensesTotal)} ₽",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                    Text(
-                        "${String.format("%.0f", expensesTotal)} ₽",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                        fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -202,16 +236,8 @@ fun BatchCard(
 @Composable
 fun BatchInfoItem(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.outline
-        )
-        Text(
-            value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
-        )
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -223,12 +249,7 @@ fun BatchStatusChip(status: String) {
         else -> status to Color.Gray
     }
     Surface(color = color.copy(alpha = 0.15f), shape = RoundedCornerShape(12.dp)) {
-        Text(
-            label,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.labelSmall,
-            color = color,
-            fontWeight = FontWeight.SemiBold
-        )
+        Text(label, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelSmall, color = color, fontWeight = FontWeight.SemiBold)
     }
 }

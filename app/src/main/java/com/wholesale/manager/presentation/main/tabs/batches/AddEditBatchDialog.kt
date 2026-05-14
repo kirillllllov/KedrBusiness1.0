@@ -12,7 +12,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.wholesale.manager.domain.model.Batch
-import com.wholesale.manager.domain.model.Expense
 import com.wholesale.manager.domain.model.PurchasedRaw
 import com.wholesale.manager.presentation.common.AppDropdown
 import com.wholesale.manager.presentation.common.AppTextField
@@ -55,8 +54,9 @@ fun AddEditBatchDialog(
     val costPrice = n + r
     val outputKg = outputKgText.toDoubleOrNull() ?: 0.0
     val outputPercent = if (rawQty > 0 && outputKg > 0) (outputKg / rawQty * 100.0) else 0.0
+    val pPerKg = if (outputKg > 0) costPrice / outputKg else 0.0
     val h = marketPricePerPercent.toDoubleOrNull() ?: 0.0
-    val optimalPrice = if (h > 0 && outputPercent > 0) costPrice + outputPercent * h else null
+    val optimalPricePerKg = if (h > 0 && outputPercent > 0) pPerKg + outputPercent * h else null
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -92,9 +92,7 @@ fun AddEditBatchDialog(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Закупка *") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = purchaseDropdownExpanded)
-                        },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = purchaseDropdownExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
                     ExposedDropdownMenu(
@@ -135,57 +133,40 @@ fun AddEditBatchDialog(
                             modifier = Modifier.fillMaxWidth().padding(12.dp),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Text(
-                                "Исходное сырьё: ${selectedPurchase.quantityKg} кг (${selectedPurchase.type})",
+                            Text("Исходное сырьё: ${selectedPurchase.quantityKg} кг (${selectedPurchase.type})",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                "n = стоимость закупки: ${String.format("%.0f", n)} ₽",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("n = стоимость закупки: ${String.format("%.0f", n)} ₽",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                "R = расходы по закупке: ${String.format("%.0f", r)} ₽",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("R = расходы по закупке: ${String.format("%.0f", r)} ₽",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
 
                 HorizontalDivider()
-                Text(
-                    "Выход продукта",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("Выход продукта", style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
 
                 AppTextField(
                     value = outputKgText,
                     onValueChange = { outputKgText = it; outputError = false },
                     label = "Выход ореха 1 сорта (кг) *",
-                    isError = outputError,
-                    errorText = "Введите число > 0",
+                    isError = outputError, errorText = "Введите число > 0",
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
 
                 if (outputPercent > 0) {
-                    Text(
-                        "Выход: ${String.format("%.1f", outputPercent)}% от исходной массы",
+                    Text("Выход: ${String.format("%.1f", outputPercent)}% от исходной массы",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                        color = MaterialTheme.colorScheme.primary)
                 }
 
                 HorizontalDivider()
-                Text(
-                    "Себестоимость партии",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("Себестоимость партии", style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
 
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer,
@@ -197,33 +178,29 @@ fun AddEditBatchDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(
-                                "P = n + R",
+                            Text("P = n + R = ${String.format("%.0f", n)} + ${String.format("%.0f", r)}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                "${String.format("%.0f", n)} + ${String.format("%.0f", r)}",
+                                color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Text("P (всего): ${String.format("%.2f", costPrice)} ₽",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                                color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            if (outputKg > 0) {
+                                Text("P за кг: ${String.format("%.2f", pPerKg)} ₽/кг",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.primary)
+                            }
                         }
-                        Text(
-                            "${String.format("%.2f", costPrice)} ₽",
+                        Text("${String.format("%.2f", costPrice)} ₽",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                            color = MaterialTheme.colorScheme.primary)
                     }
                 }
 
                 HorizontalDivider()
-                Text(
-                    "Оптимальная стоимость",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("Оптимальная стоимость (за кг)", style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
 
                 AppTextField(
                     value = marketPricePerPercent,
@@ -245,7 +222,7 @@ fun AddEditBatchDialog(
                     }
                 }
 
-                if (optimalPrice != null) {
+                if (optimalPricePerKg != null) {
                     Surface(
                         color = MaterialTheme.colorScheme.secondaryContainer,
                         shape = MaterialTheme.shapes.small
@@ -256,23 +233,17 @@ fun AddEditBatchDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text(
-                                    "So = P + v×h",
+                                Text("So(за кг) = P(за кг) + v×h",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                                Text(
-                                    "${String.format("%.2f", costPrice)} + ${String.format("%.1f", outputPercent)}×$h",
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                Text("${String.format("%.2f", pPerKg)} + ${String.format("%.1f", outputPercent)}×${String.format("%.0f", h)}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer)
                             }
-                            Text(
-                                "${String.format("%.2f", optimalPrice)} ₽",
+                            Text("${String.format("%.2f", optimalPricePerKg)} ₽/кг",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.secondary
-                            )
+                                color = MaterialTheme.colorScheme.secondary)
                         }
                     }
                 }

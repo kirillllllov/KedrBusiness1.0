@@ -16,14 +16,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.wholesale.manager.domain.model.PurchasedRaw
+import com.wholesale.manager.presentation.auth.Permissions
+import com.wholesale.manager.presentation.common.ConfirmDeleteDialog
 import com.wholesale.manager.presentation.common.FilterChipRow
 import com.wholesale.manager.presentation.common.SearchBar
 import com.wholesale.manager.presentation.common.SwipeToDeleteBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PurchasesTab(viewModel: PurchasesViewModel) {
+fun PurchasesTab(viewModel: PurchasesViewModel, userRole: String) {
     val state by viewModel.state.collectAsState()
+    var pendingDeleteId by remember { mutableStateOf<String?>(null) }
+
+    if (pendingDeleteId != null) {
+        ConfirmDeleteDialog(
+            message = "Закупка будет удалена. Это действие нельзя отменить.",
+            onConfirm = { viewModel.delete(pendingDeleteId!!); pendingDeleteId = null },
+            onDismiss = { pendingDeleteId = null }
+        )
+    }
 
     if (state.showAddDialog) {
         AddEditPurchaseDialog(
@@ -48,20 +59,19 @@ fun PurchasesTab(viewModel: PurchasesViewModel) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.showAddDialog() },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "Добавить", tint = Color.White)
+            if (Permissions.canAddPurchase(userRole)) {
+                FloatingActionButton(
+                    onClick = { viewModel.showAddDialog() },
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "Добавить", tint = Color.White)
+                }
             }
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            SearchBar(
-                query = state.searchQuery,
-                onQueryChanged = viewModel::onSearchChanged,
-                placeholder = "Поиск по поставщику или типу..."
-            )
+            SearchBar(query = state.searchQuery, onQueryChanged = viewModel::onSearchChanged,
+                placeholder = "Поиск по поставщику или типу...")
             FilterChipRow(
                 options = listOf(
                     "" to "Все",
@@ -87,20 +97,38 @@ fun PurchasesTab(viewModel: PurchasesViewModel) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(state.filtered, key = { it.id }) { item ->
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = { value ->
-                                when (value) {
-                                    EndToStart -> { viewModel.delete(item.id); true }
-                                    StartToEnd -> { viewModel.showEditDialog(item); false }
-                                    else -> false
+                        if (Permissions.canDeletePurchase(userRole) || Permissions.canEditPurchase(userRole)) {
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = { value ->
+                                    when (value) {
+                                        EndToStart -> {
+                                            if (Permissions.canDeletePurchase(userRole)) {
+                                                pendingDeleteId = item.id
+                                            }
+                                            false
+                                        }
+                                        StartToEnd -> {
+                                            if (Permissions.canEditPurchase(userRole)) {
+                                                viewModel.showEditDialog(item)
+                                            }
+                                            false
+                                        }
+                                        else -> false
+                                    }
                                 }
-                            }
-                        )
-                        SwipeToDismissBox(
-                            state = dismissState,
-                            backgroundContent = { SwipeToDeleteBackground(dismissState) },
-                            content = { PurchaseCard(item, onClick = { viewModel.showEditDialog(item) }) }
-                        )
+                            )
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                backgroundContent = { SwipeToDeleteBackground(dismissState) },
+                                content = {
+                                    PurchaseCard(item, onClick = {
+                                        if (Permissions.canEditPurchase(userRole)) viewModel.showEditDialog(item)
+                                    })
+                                }
+                            )
+                        } else {
+                            PurchaseCard(item, onClick = {})
+                        }
                     }
                 }
             }
@@ -119,11 +147,8 @@ fun PurchaseCard(item: PurchasedRaw, onClick: () -> Unit) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        "Закупка №${item.number} · ${item.type}",
-                        fontWeight = FontWeight.SemiBold,
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                    Text("Закупка №${item.number} · ${item.type}",
+                        fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
                     Text(item.supplierName, style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -159,14 +184,8 @@ fun StatusChip(status: String) {
         PurchasedRaw.STATUS_PROCESSED -> "Обработано" to Color(0xFF2E7D32)
         else -> status to Color.Gray
     }
-    Surface(
-        color = color.copy(alpha = 0.15f),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Text(
-            label, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.labelSmall,
-            color = color, fontWeight = FontWeight.SemiBold
-        )
+    Surface(color = color.copy(alpha = 0.15f), shape = RoundedCornerShape(12.dp)) {
+        Text(label, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelSmall, color = color, fontWeight = FontWeight.SemiBold)
     }
 }

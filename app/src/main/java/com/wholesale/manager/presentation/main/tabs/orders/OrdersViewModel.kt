@@ -48,6 +48,13 @@ class OrdersViewModel(
     fun showEditDialog(item: Order) = _state.update { it.copy(showAddDialog = true, editingItem = item) }
     fun dismissDialog() = _state.update { it.copy(showAddDialog = false, editingItem = null) }
 
+    fun updateStatus(orderId: String, newStatus: String) {
+        viewModelScope.launch {
+            val order = _state.value.items.find { it.id == orderId } ?: return@launch
+            useCases.update(order.copy(status = newStatus, lastModified = Instant.now().toString()))
+        }
+    }
+
     fun save(
         customerName: String, customerPhone: String, customerAddress: String?,
         batchId: String, quantityKg: Double, pricePerKg: Double,

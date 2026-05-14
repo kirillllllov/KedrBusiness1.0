@@ -16,14 +16,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.wholesale.manager.domain.model.Order
+import com.wholesale.manager.domain.model.User
+import com.wholesale.manager.presentation.auth.Permissions
+import com.wholesale.manager.presentation.common.ConfirmDeleteDialog
 import com.wholesale.manager.presentation.common.FilterChipRow
 import com.wholesale.manager.presentation.common.SearchBar
 import com.wholesale.manager.presentation.common.SwipeToDeleteBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OrdersTab(viewModel: OrdersViewModel) {
+fun OrdersTab(viewModel: OrdersViewModel, userRole: String) {
     val state by viewModel.state.collectAsState()
+    var pendingDeleteId by remember { mutableStateOf<String?>(null) }
+
+    if (pendingDeleteId != null) {
+        ConfirmDeleteDialog(
+            message = "Заказ будет удалён. Это действие нельзя отменить.",
+            onConfirm = { viewModel.delete(pendingDeleteId!!); pendingDeleteId = null },
+            onDismiss = { pendingDeleteId = null }
+        )
+    }
 
     if (state.showAddDialog) {
         AddEditOrderDialog(
@@ -47,20 +59,19 @@ fun OrdersTab(viewModel: OrdersViewModel) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.showAddDialog() },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "Добавить", tint = Color.White)
+            if (Permissions.canCreateOrder(userRole)) {
+                FloatingActionButton(
+                    onClick = { viewModel.showAddDialog() },
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "Добавить", tint = Color.White)
+                }
             }
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            SearchBar(
-                query = state.searchQuery,
-                onQueryChanged = viewModel::onSearchChanged,
-                placeholder = "Поиск по клиенту или телефону..."
-            )
+            SearchBar(query = state.searchQuery, onQueryChanged = viewModel::onSearchChanged,
+                placeholder = "Поиск по клиенту или телефону...")
             FilterChipRow(
                 options = listOf(
                     "" to "Все",
@@ -88,19 +99,94 @@ fun OrdersTab(viewModel: OrdersViewModel) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(state.filtered, key = { it.id }) { item ->
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = { value ->
-                                when (value) {
-                                    EndToStart -> { viewModel.delete(item.id); true }
-                                    StartToEnd -> { viewModel.showEditDialog(item); false }
-                                    else -> false
+                        if (userRole == User.ROLE_EXECUTOR) {
+                            ExecutorOrderCard(
+                                item = item,
+                                onStatusUpdate = { newStatus -> viewModel.updateStatus(item.id, newStatus) }
+                            )
+                        } else {
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = { value ->
+                                    when (value) {
+                                        EndToStart -> { pendingDeleteId = item.id; false }
+                                        StartToEnd -> { viewModel.showEditDialog(item); false }
+                                        else -> false
+                                    }
                                 }
-                            }
-                        )
-                        SwipeToDismissBox(
-                            state = dismissState,
-                            backgroundContent = { SwipeToDeleteBackground(dismissState) },
-                            content = { OrderCard(item, onClick = { viewModel.showEditDialog(item) }) }
+                            )
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                backgroundContent = { SwipeToDeleteBackground(dismissState) },
+                                content = {
+                                    OrderCard(item, onClick = { viewModel.showEditDialog(item) })
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ExecutorOrderCard(item: Order, onStatusUpdate: (String) -> Unit) {
+    var statusMenuExpanded by remember { mutableStateOf(false) }
+    val statusOptions = listOf(
+        Order.STATUS_NEW to "Новый",
+        Order.STATUS_CONFIRMED to "Подтверждён",
+        Order.STATUS_SHIPPED to "Отправлен",
+        Order.STATUS_DELIVERED to "Доставлен"
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth().animateContentSize(),
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(item.customerName, fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium)
+                    Text(item.customerPhone, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline)
+                }
+                OrderStatusChip(item.status)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                OrderInfoItem("Кол-во", "${item.quantityKg} кг")
+                OrderInfoItem("Итого", "${String.format("%.0f", item.totalAmount)} ₽")
+                item.shipmentDate?.let { OrderInfoItem("Отгрузка", it) }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            ExposedDropdownMenuBox(
+                expanded = statusMenuExpanded,
+                onExpandedChange = { statusMenuExpanded = it }
+            ) {
+                OutlinedButton(
+                    onClick = { statusMenuExpanded = true },
+                    modifier = Modifier.fillMaxWidth().menuAnchor()
+                ) {
+                    Text("Изменить статус")
+                    Spacer(Modifier.weight(1f))
+                    Icon(Icons.Filled.ArrowDropDown, null)
+                }
+                ExposedDropdownMenu(
+                    expanded = statusMenuExpanded,
+                    onDismissRequest = { statusMenuExpanded = false }
+                ) {
+                    statusOptions.forEach { (status, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = {
+                                onStatusUpdate(status)
+                                statusMenuExpanded = false
+                            },
+                            leadingIcon = if (item.status == status) {
+                                { Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary) }
+                            } else null
                         )
                     }
                 }
@@ -134,8 +220,7 @@ fun OrderCard(item: Order, onClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text(orderDeliveryLabel(item.deliveryMethod),
-                    style = MaterialTheme.typography.bodySmall,
+                Text(orderDeliveryLabel(item.deliveryMethod), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline)
                 item.shipmentDate?.let {
                     Text("Отгрузка: $it", style = MaterialTheme.typography.bodySmall,

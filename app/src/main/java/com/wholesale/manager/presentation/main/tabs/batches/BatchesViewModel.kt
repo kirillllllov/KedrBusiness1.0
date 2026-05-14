@@ -3,9 +3,11 @@ package com.wholesale.manager.presentation.main.tabs.batches
 import androidx.lifecycle.*
 import com.wholesale.manager.di.BatchUseCases
 import com.wholesale.manager.di.ExpenseUseCases
+import com.wholesale.manager.di.OrderUseCases
 import com.wholesale.manager.di.PurchaseUseCases
 import com.wholesale.manager.domain.model.Batch
 import com.wholesale.manager.domain.model.Expense
+import com.wholesale.manager.domain.model.Order
 import com.wholesale.manager.domain.model.PurchasedRaw
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -17,6 +19,7 @@ data class BatchesUiState(
     val items: List<Batch> = emptyList(),
     val allPurchases: List<PurchasedRaw> = emptyList(),
     val allExpenses: List<Expense> = emptyList(),
+    val allOrders: List<Order> = emptyList(),
     val searchQuery: String = "",
     val statusFilter: String = "",
     val showAddDialog: Boolean = false,
@@ -40,12 +43,20 @@ data class BatchesUiState(
 
     fun purchaseById(purchaseId: String?): PurchasedRaw? =
         allPurchases.find { it.id == purchaseId }
+
+    fun remainingKg(batchId: String, outputKg: Double): Double {
+        val ordered = allOrders
+            .filter { it.batchId == batchId && it.status != Order.STATUS_CANCELLED }
+            .sumOf { it.quantityKg }
+        return (outputKg - ordered).coerceAtLeast(0.0)
+    }
 }
 
 class BatchesViewModel(
     private val useCases: BatchUseCases,
     private val purchaseUseCases: PurchaseUseCases,
-    private val expenseUseCases: ExpenseUseCases
+    private val expenseUseCases: ExpenseUseCases,
+    private val orderUseCases: OrderUseCases
 ) : ViewModel() {
     private val _state = MutableStateFlow(BatchesUiState())
     val state: StateFlow<BatchesUiState> = _state.asStateFlow()
@@ -59,6 +70,9 @@ class BatchesViewModel(
         }
         viewModelScope.launch {
             expenseUseCases.getAll().collect { list -> _state.update { it.copy(allExpenses = list) } }
+        }
+        viewModelScope.launch {
+            orderUseCases.getAll().collect { list -> _state.update { it.copy(allOrders = list) } }
         }
     }
 
@@ -86,8 +100,9 @@ class BatchesViewModel(
             val r = st.expensesTotalForPurchase(purchaseId)
             val costPrice = n + r
             val outputPercent = if (rawQty > 0) (outputKg / rawQty * 100).roundToInt() else 0
-            val optimalPricePerKg = if (marketPricePerPercent > 0)
-                costPrice + outputPercent * marketPricePerPercent
+            val pPerKg = if (outputKg > 0) costPrice / outputKg else 0.0
+            val optimalPricePerKg = if (marketPricePerPercent > 0 && outputPercent > 0)
+                pPerKg + outputPercent * marketPricePerPercent
             else null
 
             if (existing == null) {
@@ -121,6 +136,16 @@ class BatchesViewModel(
                     )
                 )
             }
+
+            if (purchase != null && purchase.status != PurchasedRaw.STATUS_IN_BATCH) {
+                purchaseUseCases.update(
+                    purchase.copy(
+                        status = PurchasedRaw.STATUS_IN_BATCH,
+                        lastModified = now
+                    )
+                )
+            }
+
             dismissDialog()
         }
     }
@@ -133,10 +158,11 @@ class BatchesViewModel(
 class BatchesViewModelFactory(
     private val useCases: BatchUseCases,
     private val purchaseUseCases: PurchaseUseCases,
-    private val expenseUseCases: ExpenseUseCases
+    private val expenseUseCases: ExpenseUseCases,
+    private val orderUseCases: OrderUseCases
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         @Suppress("UNCHECKED_CAST")
-        return BatchesViewModel(useCases, purchaseUseCases, expenseUseCases) as T
+        return BatchesViewModel(useCases, purchaseUseCases, expenseUseCases, orderUseCases) as T
     }
 }

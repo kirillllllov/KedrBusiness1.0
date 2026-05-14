@@ -16,14 +16,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.wholesale.manager.domain.model.Expense
+import com.wholesale.manager.presentation.auth.Permissions
+import com.wholesale.manager.presentation.common.ConfirmDeleteDialog
 import com.wholesale.manager.presentation.common.FilterChipRow
 import com.wholesale.manager.presentation.common.SearchBar
 import com.wholesale.manager.presentation.common.SwipeToDeleteBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpensesTab(viewModel: ExpensesViewModel) {
+fun ExpensesTab(viewModel: ExpensesViewModel, userRole: String) {
     val state by viewModel.state.collectAsState()
+    var pendingDeleteId by remember { mutableStateOf<String?>(null) }
+
+    if (pendingDeleteId != null) {
+        ConfirmDeleteDialog(
+            message = "Расход будет удалён. Это действие нельзя отменить.",
+            onConfirm = { viewModel.delete(pendingDeleteId!!); pendingDeleteId = null },
+            onDismiss = { pendingDeleteId = null }
+        )
+    }
 
     if (state.showAddDialog) {
         AddEditExpenseDialog(
@@ -47,20 +58,20 @@ fun ExpensesTab(viewModel: ExpensesViewModel) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.showAddDialog() },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "Добавить", tint = Color.White)
+            if (Permissions.canAddExpense(userRole)) {
+                FloatingActionButton(
+                    onClick = { viewModel.showAddDialog() },
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "Добавить", tint = Color.White)
+                }
             }
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (state.filtered.isNotEmpty()) {
                 Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -70,20 +81,14 @@ fun ExpensesTab(viewModel: ExpensesViewModel) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Итого:", style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            "${String.format("%.0f", state.totalAmount)} ₽",
+                        Text("${String.format("%.0f", state.totalAmount)} ₽",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                            fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
-            SearchBar(
-                query = state.searchQuery,
-                onQueryChanged = viewModel::onSearchChanged,
-                placeholder = "Поиск по типу или описанию..."
-            )
+            SearchBar(query = state.searchQuery, onQueryChanged = viewModel::onSearchChanged,
+                placeholder = "Поиск по типу или описанию...")
             FilterChipRow(
                 options = listOf(
                     "" to "Все",
@@ -99,11 +104,8 @@ fun ExpensesTab(viewModel: ExpensesViewModel) {
             if (state.filtered.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Filled.AttachMoney, null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.outline
-                        )
+                        Icon(Icons.Filled.AttachMoney, null,
+                            modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Нет расходов", color = MaterialTheme.colorScheme.outline)
                     }
@@ -115,26 +117,46 @@ fun ExpensesTab(viewModel: ExpensesViewModel) {
                 ) {
                     items(state.filtered, key = { it.id }) { item ->
                         val linkedPurchase = state.purchases.find { it.id == item.purchaseId }
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = { value ->
-                                when (value) {
-                                    EndToStart -> { viewModel.delete(item.id); true }
-                                    StartToEnd -> { viewModel.showEditDialog(item); false }
-                                    else -> false
+                        if (Permissions.canDeleteExpense(userRole) || Permissions.canEditExpense(userRole)) {
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = { value ->
+                                    when (value) {
+                                        EndToStart -> {
+                                            if (Permissions.canDeleteExpense(userRole)) {
+                                                pendingDeleteId = item.id
+                                            }
+                                            false
+                                        }
+                                        StartToEnd -> {
+                                            if (Permissions.canEditExpense(userRole)) {
+                                                viewModel.showEditDialog(item)
+                                            }
+                                            false
+                                        }
+                                        else -> false
+                                    }
                                 }
-                            }
-                        )
-                        SwipeToDismissBox(
-                            state = dismissState,
-                            backgroundContent = { SwipeToDeleteBackground(dismissState) },
-                            content = {
-                                ExpenseCard(
-                                    item = item,
-                                    purchaseLabel = linkedPurchase?.let { "Закупка №${it.number} · ${it.type}" },
-                                    onClick = { viewModel.showEditDialog(item) }
-                                )
-                            }
-                        )
+                            )
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                backgroundContent = { SwipeToDeleteBackground(dismissState) },
+                                content = {
+                                    ExpenseCard(
+                                        item = item,
+                                        purchaseLabel = linkedPurchase?.let { "Закупка №${it.number} · ${it.type}" },
+                                        onClick = {
+                                            if (Permissions.canEditExpense(userRole)) viewModel.showEditDialog(item)
+                                        }
+                                    )
+                                }
+                            )
+                        } else {
+                            ExpenseCard(
+                                item = item,
+                                purchaseLabel = linkedPurchase?.let { "Закупка №${it.number} · ${it.type}" },
+                                onClick = {}
+                            )
+                        }
                     }
                 }
             }
@@ -151,39 +173,23 @@ fun ExpenseCard(item: Expense, purchaseLabel: String?, onClick: () -> Unit) {
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    expenseTypeLabel(item.type),
-                    fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.titleSmall
-                )
+                Text(expenseTypeLabel(item.type), fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleSmall)
                 item.description?.let {
-                    Text(
-                        it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2
-                    )
+                    Text(it, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
                 }
-                Text(
-                    item.date,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
+                Text(item.date, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline)
                 if (purchaseLabel != null) {
-                    Text(
-                        purchaseLabel,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Text(purchaseLabel, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary)
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                "${String.format("%.0f", item.amount)} ₽",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.error
-            )
+            Text("${String.format("%.0f", item.amount)} ₽",
+                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error)
         }
     }
 }
