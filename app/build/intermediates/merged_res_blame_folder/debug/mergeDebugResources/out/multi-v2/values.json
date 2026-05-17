@@ -21,23 +21,6 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\kopte\\Desktop\\KedrBusinessreplit3\\app\\src\\main\\res\\values\\strings.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "54",
-                        "endOffsets": "105"
-                    },
-                    "to": {
-                        "startLines": "102",
-                        "startColumns": "4",
-                        "startOffsets": "6212",
-                        "endColumns": "54",
-                        "endOffsets": "6262"
-                    }
-                },
-                {
                     "source": "C:\\Users\\kopte\\.gradle\\caches\\transforms-4\\6a9b900f7c47c1ca7083f5cab58e8c3d\\transformed\\activity-1.9.3\\res\\values\\values.xml",
                     "from": {
                         "startLines": "2,3",
@@ -180,6 +163,23 @@
                     }
                 },
                 {
+                    "source": "C:\\Users\\kopte\\Desktop\\KedrBusiness104\\app\\src\\main\\res\\values\\strings.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "54",
+                        "endOffsets": "105"
+                    },
+                    "to": {
+                        "startLines": "102",
+                        "startColumns": "4",
+                        "startOffsets": "6212",
+                        "endColumns": "54",
+                        "endOffsets": "6262"
+                    }
+                },
+                {
                     "source": "C:\\Users\\kopte\\.gradle\\caches\\transforms-4\\8aca9d08eb5e40d474fe0df2f4490a2c\\transformed\\lifecycle-runtime-release\\res\\values\\values.xml",
                     "from": {
                         "startLines": "2",
@@ -252,7 +252,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\kopte\\Desktop\\KedrBusinessreplit3\\app\\src\\main\\res\\values\\themes.xml",
+                    "source": "C:\\Users\\kopte\\Desktop\\KedrBusiness104\\app\\src\\main\\res\\values\\themes.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",

@@ -19,6 +19,8 @@ import com.wholesale.manager.data.local.dao.OrderDao;
 import com.wholesale.manager.data.local.dao.OrderDao_Impl;
 import com.wholesale.manager.data.local.dao.PurchasedRawDao;
 import com.wholesale.manager.data.local.dao.PurchasedRawDao_Impl;
+import com.wholesale.manager.data.local.dao.UserDao;
+import com.wholesale.manager.data.local.dao.UserDao_Impl;
 import java.lang.Class;
 import java.lang.Override;
 import java.lang.String;
@@ -42,18 +44,21 @@ public final class AppDatabase_Impl extends AppDatabase {
 
   private volatile ExpenseDao _expenseDao;
 
+  private volatile UserDao _userDao;
+
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(1) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(4) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS `batches` (`id` TEXT NOT NULL, `serverId` TEXT, `number` TEXT NOT NULL, `formationDate` TEXT NOT NULL, `rawQuantityKg` REAL NOT NULL, `outputPercent` INTEGER NOT NULL, `costPrice` REAL NOT NULL, `optimalPricePerKg` REAL, `status` TEXT NOT NULL, `lastModified` TEXT NOT NULL, `isDeleted` INTEGER NOT NULL, PRIMARY KEY(`id`))");
-        db.execSQL("CREATE TABLE IF NOT EXISTS `purchased_raws` (`id` TEXT NOT NULL, `serverId` TEXT, `lastModified` TEXT NOT NULL, `isDeleted` INTEGER NOT NULL, `type` TEXT NOT NULL, `quantityKg` REAL NOT NULL, `purchasePriceTotal` REAL NOT NULL, `pricePerKg` REAL NOT NULL, `supplierName` TEXT NOT NULL, `purchaseDate` TEXT NOT NULL, `status` TEXT NOT NULL, `batchId` TEXT, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `batches` (`id` TEXT NOT NULL, `serverId` TEXT, `number` TEXT NOT NULL, `formationDate` TEXT NOT NULL, `purchaseId` TEXT, `rawQuantityKg` REAL NOT NULL, `outputKg` REAL NOT NULL, `outputPercent` INTEGER NOT NULL, `costPrice` REAL NOT NULL, `optimalPricePerKg` REAL, `status` TEXT NOT NULL, `lastModified` TEXT NOT NULL, `isDeleted` INTEGER NOT NULL, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `purchased_raws` (`id` TEXT NOT NULL, `number` INTEGER NOT NULL, `serverId` TEXT, `lastModified` TEXT NOT NULL, `isDeleted` INTEGER NOT NULL, `type` TEXT NOT NULL, `quantityKg` REAL NOT NULL, `purchasePriceTotal` REAL NOT NULL, `pricePerKg` REAL NOT NULL, `supplierName` TEXT NOT NULL, `purchaseDate` TEXT NOT NULL, `status` TEXT NOT NULL, `batchId` TEXT, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `orders` (`id` TEXT NOT NULL, `serverId` TEXT, `lastModified` TEXT NOT NULL, `isDeleted` INTEGER NOT NULL, `customerName` TEXT NOT NULL, `customerPhone` TEXT NOT NULL, `customerAddress` TEXT, `batchId` TEXT NOT NULL, `quantityKg` REAL NOT NULL, `pricePerKg` REAL NOT NULL, `totalAmount` REAL NOT NULL, `creationDate` TEXT NOT NULL, `shipmentDate` TEXT, `deliveryMethod` TEXT NOT NULL, `status` TEXT NOT NULL, PRIMARY KEY(`id`))");
-        db.execSQL("CREATE TABLE IF NOT EXISTS `expenses` (`id` TEXT NOT NULL, `serverId` TEXT, `lastModified` TEXT NOT NULL, `isDeleted` INTEGER NOT NULL, `type` TEXT NOT NULL, `amount` REAL NOT NULL, `date` TEXT NOT NULL, `description` TEXT, `batchIdsJson` TEXT NOT NULL, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `expenses` (`id` TEXT NOT NULL, `serverId` TEXT, `lastModified` TEXT NOT NULL, `isDeleted` INTEGER NOT NULL, `type` TEXT NOT NULL, `amount` REAL NOT NULL, `date` TEXT NOT NULL, `description` TEXT, `batchIdsJson` TEXT NOT NULL, `purchaseId` TEXT, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `users` (`id` TEXT NOT NULL, `username` TEXT NOT NULL, `passwordHash` TEXT NOT NULL, `role` TEXT NOT NULL, `displayName` TEXT NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '96860ebb454871e1055fff066627316f')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '73dc18b4b48896bc31adbded03f4d362')");
       }
 
       @Override
@@ -62,6 +67,7 @@ public final class AppDatabase_Impl extends AppDatabase {
         db.execSQL("DROP TABLE IF EXISTS `purchased_raws`");
         db.execSQL("DROP TABLE IF EXISTS `orders`");
         db.execSQL("DROP TABLE IF EXISTS `expenses`");
+        db.execSQL("DROP TABLE IF EXISTS `users`");
         final List<? extends RoomDatabase.Callback> _callbacks = mCallbacks;
         if (_callbacks != null) {
           for (RoomDatabase.Callback _callback : _callbacks) {
@@ -105,12 +111,14 @@ public final class AppDatabase_Impl extends AppDatabase {
       @NonNull
       public RoomOpenHelper.ValidationResult onValidateSchema(
           @NonNull final SupportSQLiteDatabase db) {
-        final HashMap<String, TableInfo.Column> _columnsBatches = new HashMap<String, TableInfo.Column>(11);
+        final HashMap<String, TableInfo.Column> _columnsBatches = new HashMap<String, TableInfo.Column>(13);
         _columnsBatches.put("id", new TableInfo.Column("id", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsBatches.put("serverId", new TableInfo.Column("serverId", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsBatches.put("number", new TableInfo.Column("number", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsBatches.put("formationDate", new TableInfo.Column("formationDate", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsBatches.put("purchaseId", new TableInfo.Column("purchaseId", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsBatches.put("rawQuantityKg", new TableInfo.Column("rawQuantityKg", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsBatches.put("outputKg", new TableInfo.Column("outputKg", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsBatches.put("outputPercent", new TableInfo.Column("outputPercent", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsBatches.put("costPrice", new TableInfo.Column("costPrice", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsBatches.put("optimalPricePerKg", new TableInfo.Column("optimalPricePerKg", "REAL", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -126,8 +134,9 @@ public final class AppDatabase_Impl extends AppDatabase {
                   + " Expected:\n" + _infoBatches + "\n"
                   + " Found:\n" + _existingBatches);
         }
-        final HashMap<String, TableInfo.Column> _columnsPurchasedRaws = new HashMap<String, TableInfo.Column>(12);
+        final HashMap<String, TableInfo.Column> _columnsPurchasedRaws = new HashMap<String, TableInfo.Column>(13);
         _columnsPurchasedRaws.put("id", new TableInfo.Column("id", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsPurchasedRaws.put("number", new TableInfo.Column("number", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsPurchasedRaws.put("serverId", new TableInfo.Column("serverId", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsPurchasedRaws.put("lastModified", new TableInfo.Column("lastModified", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsPurchasedRaws.put("isDeleted", new TableInfo.Column("isDeleted", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -173,7 +182,7 @@ public final class AppDatabase_Impl extends AppDatabase {
                   + " Expected:\n" + _infoOrders + "\n"
                   + " Found:\n" + _existingOrders);
         }
-        final HashMap<String, TableInfo.Column> _columnsExpenses = new HashMap<String, TableInfo.Column>(9);
+        final HashMap<String, TableInfo.Column> _columnsExpenses = new HashMap<String, TableInfo.Column>(10);
         _columnsExpenses.put("id", new TableInfo.Column("id", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsExpenses.put("serverId", new TableInfo.Column("serverId", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsExpenses.put("lastModified", new TableInfo.Column("lastModified", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -183,6 +192,7 @@ public final class AppDatabase_Impl extends AppDatabase {
         _columnsExpenses.put("date", new TableInfo.Column("date", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsExpenses.put("description", new TableInfo.Column("description", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsExpenses.put("batchIdsJson", new TableInfo.Column("batchIdsJson", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsExpenses.put("purchaseId", new TableInfo.Column("purchaseId", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysExpenses = new HashSet<TableInfo.ForeignKey>(0);
         final HashSet<TableInfo.Index> _indicesExpenses = new HashSet<TableInfo.Index>(0);
         final TableInfo _infoExpenses = new TableInfo("expenses", _columnsExpenses, _foreignKeysExpenses, _indicesExpenses);
@@ -192,9 +202,24 @@ public final class AppDatabase_Impl extends AppDatabase {
                   + " Expected:\n" + _infoExpenses + "\n"
                   + " Found:\n" + _existingExpenses);
         }
+        final HashMap<String, TableInfo.Column> _columnsUsers = new HashMap<String, TableInfo.Column>(5);
+        _columnsUsers.put("id", new TableInfo.Column("id", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsUsers.put("username", new TableInfo.Column("username", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsUsers.put("passwordHash", new TableInfo.Column("passwordHash", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsUsers.put("role", new TableInfo.Column("role", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsUsers.put("displayName", new TableInfo.Column("displayName", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        final HashSet<TableInfo.ForeignKey> _foreignKeysUsers = new HashSet<TableInfo.ForeignKey>(0);
+        final HashSet<TableInfo.Index> _indicesUsers = new HashSet<TableInfo.Index>(0);
+        final TableInfo _infoUsers = new TableInfo("users", _columnsUsers, _foreignKeysUsers, _indicesUsers);
+        final TableInfo _existingUsers = TableInfo.read(db, "users");
+        if (!_infoUsers.equals(_existingUsers)) {
+          return new RoomOpenHelper.ValidationResult(false, "users(com.wholesale.manager.data.local.entity.UserEntity).\n"
+                  + " Expected:\n" + _infoUsers + "\n"
+                  + " Found:\n" + _existingUsers);
+        }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "96860ebb454871e1055fff066627316f", "76f025dda95a29732da3666e13fc3561");
+    }, "73dc18b4b48896bc31adbded03f4d362", "567d09f3a6f3b1939b152efbfdd0e3a2");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;
@@ -205,7 +230,7 @@ public final class AppDatabase_Impl extends AppDatabase {
   protected InvalidationTracker createInvalidationTracker() {
     final HashMap<String, String> _shadowTablesMap = new HashMap<String, String>(0);
     final HashMap<String, Set<String>> _viewTables = new HashMap<String, Set<String>>(0);
-    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "batches","purchased_raws","orders","expenses");
+    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "batches","purchased_raws","orders","expenses","users");
   }
 
   @Override
@@ -218,6 +243,7 @@ public final class AppDatabase_Impl extends AppDatabase {
       _db.execSQL("DELETE FROM `purchased_raws`");
       _db.execSQL("DELETE FROM `orders`");
       _db.execSQL("DELETE FROM `expenses`");
+      _db.execSQL("DELETE FROM `users`");
       super.setTransactionSuccessful();
     } finally {
       super.endTransaction();
@@ -236,6 +262,7 @@ public final class AppDatabase_Impl extends AppDatabase {
     _typeConvertersMap.put(PurchasedRawDao.class, PurchasedRawDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(OrderDao.class, OrderDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(ExpenseDao.class, ExpenseDao_Impl.getRequiredConverters());
+    _typeConvertersMap.put(UserDao.class, UserDao_Impl.getRequiredConverters());
     return _typeConvertersMap;
   }
 
@@ -306,6 +333,20 @@ public final class AppDatabase_Impl extends AppDatabase {
           _expenseDao = new ExpenseDao_Impl(this);
         }
         return _expenseDao;
+      }
+    }
+  }
+
+  @Override
+  public UserDao userDao() {
+    if (_userDao != null) {
+      return _userDao;
+    } else {
+      synchronized(this) {
+        if(_userDao == null) {
+          _userDao = new UserDao_Impl(this);
+        }
+        return _userDao;
       }
     }
   }

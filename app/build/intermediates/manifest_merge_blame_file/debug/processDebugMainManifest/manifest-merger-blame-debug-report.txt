@@ -20,39 +20,39 @@
 15-->[androidx.core:core:1.13.1] C:\Users\kopte\.gradle\caches\transforms-4\2976ef9f638179603adeec09d11ef7d6\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
 16
 17    <application
-17-->C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\AndroidManifest.xml:4:5-19:19
+17-->C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\AndroidManifest.xml:4:5-19:19
 18        android:name="com.wholesale.manager.WholesaleApp"
-18-->C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\AndroidManifest.xml:5:9-37
+18-->C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\AndroidManifest.xml:5:9-37
 19        android:allowBackup="true"
-19-->C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\AndroidManifest.xml:6:9-35
+19-->C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\AndroidManifest.xml:6:9-35
 20        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
 20-->[androidx.core:core:1.13.1] C:\Users\kopte\.gradle\caches\transforms-4\2976ef9f638179603adeec09d11ef7d6\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
 21        android:debuggable="true"
 22        android:extractNativeLibs="false"
 23        android:label="@string/app_name"
-23-->C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\AndroidManifest.xml:7:9-41
+23-->C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\AndroidManifest.xml:7:9-41
 24        android:supportsRtl="true"
-24-->C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\AndroidManifest.xml:8:9-35
+24-->C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\AndroidManifest.xml:8:9-35
 25        android:testOnly="true"
 26        android:theme="@style/Theme.WholesaleManager" >
-26-->C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\AndroidManifest.xml:9:9-54
+26-->C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\AndroidManifest.xml:9:9-54
 27        <activity
-27-->C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\AndroidManifest.xml:10:9-18:20
+27-->C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\AndroidManifest.xml:10:9-18:20
 28            android:name="com.wholesale.manager.MainActivity"
-28-->C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\AndroidManifest.xml:11:13-41
+28-->C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\AndroidManifest.xml:11:13-41
 29            android:exported="true"
-29-->C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\AndroidManifest.xml:12:13-36
+29-->C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\AndroidManifest.xml:12:13-36
 30            android:theme="@style/Theme.WholesaleManager" >
-30-->C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\AndroidManifest.xml:13:13-58
+30-->C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\AndroidManifest.xml:13:13-58
 31            <intent-filter>
-31-->C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\AndroidManifest.xml:14:13-17:29
+31-->C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\AndroidManifest.xml:14:13-17:29
 32                <action android:name="android.intent.action.MAIN" />
-32-->C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\AndroidManifest.xml:15:17-69
-32-->C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\AndroidManifest.xml:15:25-66
+32-->C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\AndroidManifest.xml:15:17-69
+32-->C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\AndroidManifest.xml:15:25-66
 33
 34                <category android:name="android.intent.category.LAUNCHER" />
-34-->C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\AndroidManifest.xml:16:17-77
-34-->C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\AndroidManifest.xml:16:27-74
+34-->C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\AndroidManifest.xml:16:17-77
+34-->C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\AndroidManifest.xml:16:27-74
 35            </intent-filter>
 36        </activity>
 37

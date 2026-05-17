@@ -46,32 +46,33 @@ public final class PurchasedRawDao_Impl implements PurchasedRawDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `purchased_raws` (`id`,`serverId`,`lastModified`,`isDeleted`,`type`,`quantityKg`,`purchasePriceTotal`,`pricePerKg`,`supplierName`,`purchaseDate`,`status`,`batchId`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `purchased_raws` (`id`,`number`,`serverId`,`lastModified`,`isDeleted`,`type`,`quantityKg`,`purchasePriceTotal`,`pricePerKg`,`supplierName`,`purchaseDate`,`status`,`batchId`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
       protected void bind(@NonNull final SupportSQLiteStatement statement,
           @NonNull final PurchasedRawEntity entity) {
         statement.bindString(1, entity.getId());
+        statement.bindLong(2, entity.getNumber());
         if (entity.getServerId() == null) {
-          statement.bindNull(2);
+          statement.bindNull(3);
         } else {
-          statement.bindString(2, entity.getServerId());
+          statement.bindString(3, entity.getServerId());
         }
-        statement.bindString(3, entity.getLastModified());
+        statement.bindString(4, entity.getLastModified());
         final int _tmp = entity.isDeleted() ? 1 : 0;
-        statement.bindLong(4, _tmp);
-        statement.bindString(5, entity.getType());
-        statement.bindDouble(6, entity.getQuantityKg());
-        statement.bindDouble(7, entity.getPurchasePriceTotal());
-        statement.bindDouble(8, entity.getPricePerKg());
-        statement.bindString(9, entity.getSupplierName());
-        statement.bindString(10, entity.getPurchaseDate());
-        statement.bindString(11, entity.getStatus());
+        statement.bindLong(5, _tmp);
+        statement.bindString(6, entity.getType());
+        statement.bindDouble(7, entity.getQuantityKg());
+        statement.bindDouble(8, entity.getPurchasePriceTotal());
+        statement.bindDouble(9, entity.getPricePerKg());
+        statement.bindString(10, entity.getSupplierName());
+        statement.bindString(11, entity.getPurchaseDate());
+        statement.bindString(12, entity.getStatus());
         if (entity.getBatchId() == null) {
-          statement.bindNull(12);
+          statement.bindNull(13);
         } else {
-          statement.bindString(12, entity.getBatchId());
+          statement.bindString(13, entity.getBatchId());
         }
       }
     };
@@ -79,34 +80,35 @@ public final class PurchasedRawDao_Impl implements PurchasedRawDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "UPDATE OR ABORT `purchased_raws` SET `id` = ?,`serverId` = ?,`lastModified` = ?,`isDeleted` = ?,`type` = ?,`quantityKg` = ?,`purchasePriceTotal` = ?,`pricePerKg` = ?,`supplierName` = ?,`purchaseDate` = ?,`status` = ?,`batchId` = ? WHERE `id` = ?";
+        return "UPDATE OR ABORT `purchased_raws` SET `id` = ?,`number` = ?,`serverId` = ?,`lastModified` = ?,`isDeleted` = ?,`type` = ?,`quantityKg` = ?,`purchasePriceTotal` = ?,`pricePerKg` = ?,`supplierName` = ?,`purchaseDate` = ?,`status` = ?,`batchId` = ? WHERE `id` = ?";
       }
 
       @Override
       protected void bind(@NonNull final SupportSQLiteStatement statement,
           @NonNull final PurchasedRawEntity entity) {
         statement.bindString(1, entity.getId());
+        statement.bindLong(2, entity.getNumber());
         if (entity.getServerId() == null) {
-          statement.bindNull(2);
+          statement.bindNull(3);
         } else {
-          statement.bindString(2, entity.getServerId());
+          statement.bindString(3, entity.getServerId());
         }
-        statement.bindString(3, entity.getLastModified());
+        statement.bindString(4, entity.getLastModified());
         final int _tmp = entity.isDeleted() ? 1 : 0;
-        statement.bindLong(4, _tmp);
-        statement.bindString(5, entity.getType());
-        statement.bindDouble(6, entity.getQuantityKg());
-        statement.bindDouble(7, entity.getPurchasePriceTotal());
-        statement.bindDouble(8, entity.getPricePerKg());
-        statement.bindString(9, entity.getSupplierName());
-        statement.bindString(10, entity.getPurchaseDate());
-        statement.bindString(11, entity.getStatus());
+        statement.bindLong(5, _tmp);
+        statement.bindString(6, entity.getType());
+        statement.bindDouble(7, entity.getQuantityKg());
+        statement.bindDouble(8, entity.getPurchasePriceTotal());
+        statement.bindDouble(9, entity.getPricePerKg());
+        statement.bindString(10, entity.getSupplierName());
+        statement.bindString(11, entity.getPurchaseDate());
+        statement.bindString(12, entity.getStatus());
         if (entity.getBatchId() == null) {
-          statement.bindNull(12);
+          statement.bindNull(13);
         } else {
-          statement.bindString(12, entity.getBatchId());
+          statement.bindString(13, entity.getBatchId());
         }
-        statement.bindString(13, entity.getId());
+        statement.bindString(14, entity.getId());
       }
     };
     this.__preparedStmtOfSoftDelete = new SharedSQLiteStatement(__db) {
@@ -196,6 +198,7 @@ public final class PurchasedRawDao_Impl implements PurchasedRawDao {
         final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
         try {
           final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfNumber = CursorUtil.getColumnIndexOrThrow(_cursor, "number");
           final int _cursorIndexOfServerId = CursorUtil.getColumnIndexOrThrow(_cursor, "serverId");
           final int _cursorIndexOfLastModified = CursorUtil.getColumnIndexOrThrow(_cursor, "lastModified");
           final int _cursorIndexOfIsDeleted = CursorUtil.getColumnIndexOrThrow(_cursor, "isDeleted");
@@ -212,6 +215,8 @@ public final class PurchasedRawDao_Impl implements PurchasedRawDao {
             final PurchasedRawEntity _item;
             final String _tmpId;
             _tmpId = _cursor.getString(_cursorIndexOfId);
+            final int _tmpNumber;
+            _tmpNumber = _cursor.getInt(_cursorIndexOfNumber);
             final String _tmpServerId;
             if (_cursor.isNull(_cursorIndexOfServerId)) {
               _tmpServerId = null;
@@ -244,7 +249,7 @@ public final class PurchasedRawDao_Impl implements PurchasedRawDao {
             } else {
               _tmpBatchId = _cursor.getString(_cursorIndexOfBatchId);
             }
-            _item = new PurchasedRawEntity(_tmpId,_tmpServerId,_tmpLastModified,_tmpIsDeleted,_tmpType,_tmpQuantityKg,_tmpPurchasePriceTotal,_tmpPricePerKg,_tmpSupplierName,_tmpPurchaseDate,_tmpStatus,_tmpBatchId);
+            _item = new PurchasedRawEntity(_tmpId,_tmpNumber,_tmpServerId,_tmpLastModified,_tmpIsDeleted,_tmpType,_tmpQuantityKg,_tmpPurchasePriceTotal,_tmpPricePerKg,_tmpSupplierName,_tmpPurchaseDate,_tmpStatus,_tmpBatchId);
             _result.add(_item);
           }
           return _result;
@@ -275,6 +280,7 @@ public final class PurchasedRawDao_Impl implements PurchasedRawDao {
         final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
         try {
           final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfNumber = CursorUtil.getColumnIndexOrThrow(_cursor, "number");
           final int _cursorIndexOfServerId = CursorUtil.getColumnIndexOrThrow(_cursor, "serverId");
           final int _cursorIndexOfLastModified = CursorUtil.getColumnIndexOrThrow(_cursor, "lastModified");
           final int _cursorIndexOfIsDeleted = CursorUtil.getColumnIndexOrThrow(_cursor, "isDeleted");
@@ -290,6 +296,8 @@ public final class PurchasedRawDao_Impl implements PurchasedRawDao {
           if (_cursor.moveToFirst()) {
             final String _tmpId;
             _tmpId = _cursor.getString(_cursorIndexOfId);
+            final int _tmpNumber;
+            _tmpNumber = _cursor.getInt(_cursorIndexOfNumber);
             final String _tmpServerId;
             if (_cursor.isNull(_cursorIndexOfServerId)) {
               _tmpServerId = null;
@@ -322,7 +330,7 @@ public final class PurchasedRawDao_Impl implements PurchasedRawDao {
             } else {
               _tmpBatchId = _cursor.getString(_cursorIndexOfBatchId);
             }
-            _result = new PurchasedRawEntity(_tmpId,_tmpServerId,_tmpLastModified,_tmpIsDeleted,_tmpType,_tmpQuantityKg,_tmpPurchasePriceTotal,_tmpPricePerKg,_tmpSupplierName,_tmpPurchaseDate,_tmpStatus,_tmpBatchId);
+            _result = new PurchasedRawEntity(_tmpId,_tmpNumber,_tmpServerId,_tmpLastModified,_tmpIsDeleted,_tmpType,_tmpQuantityKg,_tmpPurchasePriceTotal,_tmpPricePerKg,_tmpSupplierName,_tmpPurchaseDate,_tmpStatus,_tmpBatchId);
           } else {
             _result = null;
           }

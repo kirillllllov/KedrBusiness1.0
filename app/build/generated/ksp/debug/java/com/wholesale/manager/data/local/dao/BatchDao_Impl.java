@@ -47,7 +47,7 @@ public final class BatchDao_Impl implements BatchDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `batches` (`id`,`serverId`,`number`,`formationDate`,`rawQuantityKg`,`outputPercent`,`costPrice`,`optimalPricePerKg`,`status`,`lastModified`,`isDeleted`) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `batches` (`id`,`serverId`,`number`,`formationDate`,`purchaseId`,`rawQuantityKg`,`outputKg`,`outputPercent`,`costPrice`,`optimalPricePerKg`,`status`,`lastModified`,`isDeleted`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -61,25 +61,31 @@ public final class BatchDao_Impl implements BatchDao {
         }
         statement.bindString(3, entity.getNumber());
         statement.bindString(4, entity.getFormationDate());
-        statement.bindDouble(5, entity.getRawQuantityKg());
-        statement.bindLong(6, entity.getOutputPercent());
-        statement.bindDouble(7, entity.getCostPrice());
-        if (entity.getOptimalPricePerKg() == null) {
-          statement.bindNull(8);
+        if (entity.getPurchaseId() == null) {
+          statement.bindNull(5);
         } else {
-          statement.bindDouble(8, entity.getOptimalPricePerKg());
+          statement.bindString(5, entity.getPurchaseId());
         }
-        statement.bindString(9, entity.getStatus());
-        statement.bindString(10, entity.getLastModified());
+        statement.bindDouble(6, entity.getRawQuantityKg());
+        statement.bindDouble(7, entity.getOutputKg());
+        statement.bindLong(8, entity.getOutputPercent());
+        statement.bindDouble(9, entity.getCostPrice());
+        if (entity.getOptimalPricePerKg() == null) {
+          statement.bindNull(10);
+        } else {
+          statement.bindDouble(10, entity.getOptimalPricePerKg());
+        }
+        statement.bindString(11, entity.getStatus());
+        statement.bindString(12, entity.getLastModified());
         final int _tmp = entity.isDeleted() ? 1 : 0;
-        statement.bindLong(11, _tmp);
+        statement.bindLong(13, _tmp);
       }
     };
     this.__updateAdapterOfBatchEntity = new EntityDeletionOrUpdateAdapter<BatchEntity>(__db) {
       @Override
       @NonNull
       protected String createQuery() {
-        return "UPDATE OR ABORT `batches` SET `id` = ?,`serverId` = ?,`number` = ?,`formationDate` = ?,`rawQuantityKg` = ?,`outputPercent` = ?,`costPrice` = ?,`optimalPricePerKg` = ?,`status` = ?,`lastModified` = ?,`isDeleted` = ? WHERE `id` = ?";
+        return "UPDATE OR ABORT `batches` SET `id` = ?,`serverId` = ?,`number` = ?,`formationDate` = ?,`purchaseId` = ?,`rawQuantityKg` = ?,`outputKg` = ?,`outputPercent` = ?,`costPrice` = ?,`optimalPricePerKg` = ?,`status` = ?,`lastModified` = ?,`isDeleted` = ? WHERE `id` = ?";
       }
 
       @Override
@@ -93,19 +99,25 @@ public final class BatchDao_Impl implements BatchDao {
         }
         statement.bindString(3, entity.getNumber());
         statement.bindString(4, entity.getFormationDate());
-        statement.bindDouble(5, entity.getRawQuantityKg());
-        statement.bindLong(6, entity.getOutputPercent());
-        statement.bindDouble(7, entity.getCostPrice());
-        if (entity.getOptimalPricePerKg() == null) {
-          statement.bindNull(8);
+        if (entity.getPurchaseId() == null) {
+          statement.bindNull(5);
         } else {
-          statement.bindDouble(8, entity.getOptimalPricePerKg());
+          statement.bindString(5, entity.getPurchaseId());
         }
-        statement.bindString(9, entity.getStatus());
-        statement.bindString(10, entity.getLastModified());
+        statement.bindDouble(6, entity.getRawQuantityKg());
+        statement.bindDouble(7, entity.getOutputKg());
+        statement.bindLong(8, entity.getOutputPercent());
+        statement.bindDouble(9, entity.getCostPrice());
+        if (entity.getOptimalPricePerKg() == null) {
+          statement.bindNull(10);
+        } else {
+          statement.bindDouble(10, entity.getOptimalPricePerKg());
+        }
+        statement.bindString(11, entity.getStatus());
+        statement.bindString(12, entity.getLastModified());
         final int _tmp = entity.isDeleted() ? 1 : 0;
-        statement.bindLong(11, _tmp);
-        statement.bindString(12, entity.getId());
+        statement.bindLong(13, _tmp);
+        statement.bindString(14, entity.getId());
       }
     };
     this.__preparedStmtOfSoftDelete = new SharedSQLiteStatement(__db) {
@@ -196,7 +208,9 @@ public final class BatchDao_Impl implements BatchDao {
           final int _cursorIndexOfServerId = CursorUtil.getColumnIndexOrThrow(_cursor, "serverId");
           final int _cursorIndexOfNumber = CursorUtil.getColumnIndexOrThrow(_cursor, "number");
           final int _cursorIndexOfFormationDate = CursorUtil.getColumnIndexOrThrow(_cursor, "formationDate");
+          final int _cursorIndexOfPurchaseId = CursorUtil.getColumnIndexOrThrow(_cursor, "purchaseId");
           final int _cursorIndexOfRawQuantityKg = CursorUtil.getColumnIndexOrThrow(_cursor, "rawQuantityKg");
+          final int _cursorIndexOfOutputKg = CursorUtil.getColumnIndexOrThrow(_cursor, "outputKg");
           final int _cursorIndexOfOutputPercent = CursorUtil.getColumnIndexOrThrow(_cursor, "outputPercent");
           final int _cursorIndexOfCostPrice = CursorUtil.getColumnIndexOrThrow(_cursor, "costPrice");
           final int _cursorIndexOfOptimalPricePerKg = CursorUtil.getColumnIndexOrThrow(_cursor, "optimalPricePerKg");
@@ -218,8 +232,16 @@ public final class BatchDao_Impl implements BatchDao {
             _tmpNumber = _cursor.getString(_cursorIndexOfNumber);
             final String _tmpFormationDate;
             _tmpFormationDate = _cursor.getString(_cursorIndexOfFormationDate);
+            final String _tmpPurchaseId;
+            if (_cursor.isNull(_cursorIndexOfPurchaseId)) {
+              _tmpPurchaseId = null;
+            } else {
+              _tmpPurchaseId = _cursor.getString(_cursorIndexOfPurchaseId);
+            }
             final double _tmpRawQuantityKg;
             _tmpRawQuantityKg = _cursor.getDouble(_cursorIndexOfRawQuantityKg);
+            final double _tmpOutputKg;
+            _tmpOutputKg = _cursor.getDouble(_cursorIndexOfOutputKg);
             final int _tmpOutputPercent;
             _tmpOutputPercent = _cursor.getInt(_cursorIndexOfOutputPercent);
             final double _tmpCostPrice;
@@ -238,7 +260,7 @@ public final class BatchDao_Impl implements BatchDao {
             final int _tmp;
             _tmp = _cursor.getInt(_cursorIndexOfIsDeleted);
             _tmpIsDeleted = _tmp != 0;
-            _item = new BatchEntity(_tmpId,_tmpServerId,_tmpNumber,_tmpFormationDate,_tmpRawQuantityKg,_tmpOutputPercent,_tmpCostPrice,_tmpOptimalPricePerKg,_tmpStatus,_tmpLastModified,_tmpIsDeleted);
+            _item = new BatchEntity(_tmpId,_tmpServerId,_tmpNumber,_tmpFormationDate,_tmpPurchaseId,_tmpRawQuantityKg,_tmpOutputKg,_tmpOutputPercent,_tmpCostPrice,_tmpOptimalPricePerKg,_tmpStatus,_tmpLastModified,_tmpIsDeleted);
             _result.add(_item);
           }
           return _result;
@@ -271,7 +293,9 @@ public final class BatchDao_Impl implements BatchDao {
           final int _cursorIndexOfServerId = CursorUtil.getColumnIndexOrThrow(_cursor, "serverId");
           final int _cursorIndexOfNumber = CursorUtil.getColumnIndexOrThrow(_cursor, "number");
           final int _cursorIndexOfFormationDate = CursorUtil.getColumnIndexOrThrow(_cursor, "formationDate");
+          final int _cursorIndexOfPurchaseId = CursorUtil.getColumnIndexOrThrow(_cursor, "purchaseId");
           final int _cursorIndexOfRawQuantityKg = CursorUtil.getColumnIndexOrThrow(_cursor, "rawQuantityKg");
+          final int _cursorIndexOfOutputKg = CursorUtil.getColumnIndexOrThrow(_cursor, "outputKg");
           final int _cursorIndexOfOutputPercent = CursorUtil.getColumnIndexOrThrow(_cursor, "outputPercent");
           final int _cursorIndexOfCostPrice = CursorUtil.getColumnIndexOrThrow(_cursor, "costPrice");
           final int _cursorIndexOfOptimalPricePerKg = CursorUtil.getColumnIndexOrThrow(_cursor, "optimalPricePerKg");
@@ -292,8 +316,16 @@ public final class BatchDao_Impl implements BatchDao {
             _tmpNumber = _cursor.getString(_cursorIndexOfNumber);
             final String _tmpFormationDate;
             _tmpFormationDate = _cursor.getString(_cursorIndexOfFormationDate);
+            final String _tmpPurchaseId;
+            if (_cursor.isNull(_cursorIndexOfPurchaseId)) {
+              _tmpPurchaseId = null;
+            } else {
+              _tmpPurchaseId = _cursor.getString(_cursorIndexOfPurchaseId);
+            }
             final double _tmpRawQuantityKg;
             _tmpRawQuantityKg = _cursor.getDouble(_cursorIndexOfRawQuantityKg);
+            final double _tmpOutputKg;
+            _tmpOutputKg = _cursor.getDouble(_cursorIndexOfOutputKg);
             final int _tmpOutputPercent;
             _tmpOutputPercent = _cursor.getInt(_cursorIndexOfOutputPercent);
             final double _tmpCostPrice;
@@ -312,7 +344,7 @@ public final class BatchDao_Impl implements BatchDao {
             final int _tmp;
             _tmp = _cursor.getInt(_cursorIndexOfIsDeleted);
             _tmpIsDeleted = _tmp != 0;
-            _result = new BatchEntity(_tmpId,_tmpServerId,_tmpNumber,_tmpFormationDate,_tmpRawQuantityKg,_tmpOutputPercent,_tmpCostPrice,_tmpOptimalPricePerKg,_tmpStatus,_tmpLastModified,_tmpIsDeleted);
+            _result = new BatchEntity(_tmpId,_tmpServerId,_tmpNumber,_tmpFormationDate,_tmpPurchaseId,_tmpRawQuantityKg,_tmpOutputKg,_tmpOutputPercent,_tmpCostPrice,_tmpOptimalPricePerKg,_tmpStatus,_tmpLastModified,_tmpIsDeleted);
           } else {
             _result = null;
           }

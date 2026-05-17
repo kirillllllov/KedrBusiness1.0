@@ -46,7 +46,7 @@ public final class ExpenseDao_Impl implements ExpenseDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `expenses` (`id`,`serverId`,`lastModified`,`isDeleted`,`type`,`amount`,`date`,`description`,`batchIdsJson`) VALUES (?,?,?,?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `expenses` (`id`,`serverId`,`lastModified`,`isDeleted`,`type`,`amount`,`date`,`description`,`batchIdsJson`,`purchaseId`) VALUES (?,?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -70,13 +70,18 @@ public final class ExpenseDao_Impl implements ExpenseDao {
           statement.bindString(8, entity.getDescription());
         }
         statement.bindString(9, entity.getBatchIdsJson());
+        if (entity.getPurchaseId() == null) {
+          statement.bindNull(10);
+        } else {
+          statement.bindString(10, entity.getPurchaseId());
+        }
       }
     };
     this.__updateAdapterOfExpenseEntity = new EntityDeletionOrUpdateAdapter<ExpenseEntity>(__db) {
       @Override
       @NonNull
       protected String createQuery() {
-        return "UPDATE OR ABORT `expenses` SET `id` = ?,`serverId` = ?,`lastModified` = ?,`isDeleted` = ?,`type` = ?,`amount` = ?,`date` = ?,`description` = ?,`batchIdsJson` = ? WHERE `id` = ?";
+        return "UPDATE OR ABORT `expenses` SET `id` = ?,`serverId` = ?,`lastModified` = ?,`isDeleted` = ?,`type` = ?,`amount` = ?,`date` = ?,`description` = ?,`batchIdsJson` = ?,`purchaseId` = ? WHERE `id` = ?";
       }
 
       @Override
@@ -100,7 +105,12 @@ public final class ExpenseDao_Impl implements ExpenseDao {
           statement.bindString(8, entity.getDescription());
         }
         statement.bindString(9, entity.getBatchIdsJson());
-        statement.bindString(10, entity.getId());
+        if (entity.getPurchaseId() == null) {
+          statement.bindNull(10);
+        } else {
+          statement.bindString(10, entity.getPurchaseId());
+        }
+        statement.bindString(11, entity.getId());
       }
     };
     this.__preparedStmtOfSoftDelete = new SharedSQLiteStatement(__db) {
@@ -196,6 +206,7 @@ public final class ExpenseDao_Impl implements ExpenseDao {
           final int _cursorIndexOfDate = CursorUtil.getColumnIndexOrThrow(_cursor, "date");
           final int _cursorIndexOfDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "description");
           final int _cursorIndexOfBatchIdsJson = CursorUtil.getColumnIndexOrThrow(_cursor, "batchIdsJson");
+          final int _cursorIndexOfPurchaseId = CursorUtil.getColumnIndexOrThrow(_cursor, "purchaseId");
           final List<ExpenseEntity> _result = new ArrayList<ExpenseEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final ExpenseEntity _item;
@@ -227,7 +238,13 @@ public final class ExpenseDao_Impl implements ExpenseDao {
             }
             final String _tmpBatchIdsJson;
             _tmpBatchIdsJson = _cursor.getString(_cursorIndexOfBatchIdsJson);
-            _item = new ExpenseEntity(_tmpId,_tmpServerId,_tmpLastModified,_tmpIsDeleted,_tmpType,_tmpAmount,_tmpDate,_tmpDescription,_tmpBatchIdsJson);
+            final String _tmpPurchaseId;
+            if (_cursor.isNull(_cursorIndexOfPurchaseId)) {
+              _tmpPurchaseId = null;
+            } else {
+              _tmpPurchaseId = _cursor.getString(_cursorIndexOfPurchaseId);
+            }
+            _item = new ExpenseEntity(_tmpId,_tmpServerId,_tmpLastModified,_tmpIsDeleted,_tmpType,_tmpAmount,_tmpDate,_tmpDescription,_tmpBatchIdsJson,_tmpPurchaseId);
             _result.add(_item);
           }
           return _result;
@@ -265,6 +282,7 @@ public final class ExpenseDao_Impl implements ExpenseDao {
           final int _cursorIndexOfDate = CursorUtil.getColumnIndexOrThrow(_cursor, "date");
           final int _cursorIndexOfDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "description");
           final int _cursorIndexOfBatchIdsJson = CursorUtil.getColumnIndexOrThrow(_cursor, "batchIdsJson");
+          final int _cursorIndexOfPurchaseId = CursorUtil.getColumnIndexOrThrow(_cursor, "purchaseId");
           final ExpenseEntity _result;
           if (_cursor.moveToFirst()) {
             final String _tmpId;
@@ -295,7 +313,13 @@ public final class ExpenseDao_Impl implements ExpenseDao {
             }
             final String _tmpBatchIdsJson;
             _tmpBatchIdsJson = _cursor.getString(_cursorIndexOfBatchIdsJson);
-            _result = new ExpenseEntity(_tmpId,_tmpServerId,_tmpLastModified,_tmpIsDeleted,_tmpType,_tmpAmount,_tmpDate,_tmpDescription,_tmpBatchIdsJson);
+            final String _tmpPurchaseId;
+            if (_cursor.isNull(_cursorIndexOfPurchaseId)) {
+              _tmpPurchaseId = null;
+            } else {
+              _tmpPurchaseId = _cursor.getString(_cursorIndexOfPurchaseId);
+            }
+            _result = new ExpenseEntity(_tmpId,_tmpServerId,_tmpLastModified,_tmpIsDeleted,_tmpType,_tmpAmount,_tmpDate,_tmpDescription,_tmpBatchIdsJson,_tmpPurchaseId);
           } else {
             _result = null;
           }

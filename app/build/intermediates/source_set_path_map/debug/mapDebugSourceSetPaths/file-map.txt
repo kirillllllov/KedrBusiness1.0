@@ -50,10 +50,10 @@ com.wholesale.manager.app-material-icons-core-release-48 C:\Users\kopte\.gradle\
 com.wholesale.manager.app-material-icons-extended-release-49 C:\Users\kopte\.gradle\caches\transforms-4\f821fdc7f32bef1ec0d1c3c3bbcfa31a\transformed\material-icons-extended-release\res
 com.wholesale.manager.app-navigation-runtime-2.8.5-50 C:\Users\kopte\.gradle\caches\transforms-4\fc8b888d71f1a5d0745d22ba4b073dac\transformed\navigation-runtime-2.8.5\res
 com.wholesale.manager.app-ui-geometry-release-51 C:\Users\kopte\.gradle\caches\transforms-4\ff38a6ef0ce49f3a7279df3357e08bc4\transformed\ui-geometry-release\res
-com.wholesale.manager.app-pngs-52 C:\Users\kopte\Desktop\KedrBusinessreplit3\app\build\generated\res\pngs\debug
-com.wholesale.manager.app-resValues-53 C:\Users\kopte\Desktop\KedrBusinessreplit3\app\build\generated\res\resValues\debug
-com.wholesale.manager.app-packageDebugResources-54 C:\Users\kopte\Desktop\KedrBusinessreplit3\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
-com.wholesale.manager.app-packageDebugResources-55 C:\Users\kopte\Desktop\KedrBusinessreplit3\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
-com.wholesale.manager.app-debug-56 C:\Users\kopte\Desktop\KedrBusinessreplit3\app\build\intermediates\merged_res\debug\mergeDebugResources
-com.wholesale.manager.app-debug-57 C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\debug\res
-com.wholesale.manager.app-main-58 C:\Users\kopte\Desktop\KedrBusinessreplit3\app\src\main\res
+com.wholesale.manager.app-pngs-52 C:\Users\kopte\Desktop\KedrBusiness104\app\build\generated\res\pngs\debug
+com.wholesale.manager.app-resValues-53 C:\Users\kopte\Desktop\KedrBusiness104\app\build\generated\res\resValues\debug
+com.wholesale.manager.app-packageDebugResources-54 C:\Users\kopte\Desktop\KedrBusiness104\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.wholesale.manager.app-packageDebugResources-55 C:\Users\kopte\Desktop\KedrBusiness104\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.wholesale.manager.app-debug-56 C:\Users\kopte\Desktop\KedrBusiness104\app\build\intermediates\merged_res\debug\mergeDebugResources
+com.wholesale.manager.app-debug-57 C:\Users\kopte\Desktop\KedrBusiness104\app\src\debug\res
+com.wholesale.manager.app-main-58 C:\Users\kopte\Desktop\KedrBusiness104\app\src\main\res
