@@ -1,0 +1,176 @@
+@startuml Формирование партии
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 190
+skinparam sequenceGroupBorderColor #888888
+skinparam sequenceGroupBackgroundColor #F9F9F9
+skinparam sequenceGroupHeaderFontStyle bold
+skinparam participantBorderColor #2E7D32
+skinparam participantBackgroundColor #E8F5E9
+skinparam actorBorderColor #2E7D32
+skinparam sequenceArrowColor #2E7D32
+skinparam sequenceLifeLineBorderColor #A5D6A7
+skinparam noteBorderColor #FB8C00
+skinparam noteBackgroundColor #FFF8E1
+
+title Формирование партий\nВариант использования: Создать партию сырья
+
+actor "Пользователь\n(Директор / Администратор)" as User
+participant "BatchesTab\n(Compose UI)"             as UI
+participant "BatchesViewModel"                     as VM
+participant "ValidationService"                    as VS
+participant "GetAllPurchasesUseCase"               as GPU
+participant "CreateBatchUseCase"                   as CBU
+participant "UpdatePurchaseUseCase"                as UPU
+participant "BatchRepository\nImpl"                as BatchRepo
+participant "PurchasedRawRepository\nImpl"         as PurchaseRepo
+participant "BatchDao\n(Room)"                     as BatchDAO
+participant "PurchasedRawDao\n(Room)"              as PurchaseDAO
+database    "Room DB\n(SQLite)"                    as DB
+participant "SyncQueue\n(очередь синхронизации)"   as Sync
+
+note over User
+  Предусловия:
+  • Пользователь авторизован в системе
+  • Роль: Директор или Администратор
+  • В системе есть закупки со статусом «Ожидает» (Pending)
+end note
+
+== Основной сценарий ==
+
+User  ->  UI  : 1. Переходит в раздел «Партии»
+activate UI
+UI    ->  VM  : loadBatches()
+activate VM
+VM    --> UI  : StateFlow<BatchesUiState>\n(список партий)
+deactivate VM
+UI    --> User : отображает список партий
+
+User  ->  UI  : 2. Нажимает кнопку «Добавить партию»
+UI    ->  VM  : loadAvailablePurchases()
+activate VM
+VM    ->  GPU : invoke(): Flow<List<PurchasedRaw>>
+activate GPU
+GPU   ->  PurchaseRepo : getAll()
+activate PurchaseRepo
+PurchaseRepo  ->  PurchaseDAO : getAllNotDeleted()
+activate PurchaseDAO
+PurchaseDAO   ->  DB  : SELECT * FROM purchased_raws\nWHERE is_deleted = 0\nAND status = 'PENDING'
+DB    --> PurchaseDAO : List<PurchasedRawEntity>
+deactivate PurchaseDAO
+PurchaseRepo  --> GPU  : Flow<List<PurchasedRaw>>
+deactivate PurchaseRepo
+GPU   --> VM  : List<PurchasedRaw> (Pending)
+deactivate GPU
+VM    --> UI  : UiState обновлён:\nсписок доступных закупок
+deactivate VM
+UI    --> User : 3. Отображает форму ввода данных\n(AddEditBatchDialog)
+
+User  ->  UI  : 4. Выбирает закупку сырья из списка\n(доступны только статус Pending)
+UI    ->  VM  : onPurchaseSelected(purchaseId)
+activate VM
+VM    ->  VM  : 5. Автоматически подставляет:\nrawQuantityKg ← PurchasedRaw.quantityKg\ncostPrice ← purchasePriceTotal + расходы по закупке
+VM    --> UI  : UiState обновлён:\nrawQuantityKg, costPrice заполнены
+deactivate VM
+UI    --> User : поля «Входной вес» и «Себестоимость»\nзаполнены автоматически
+
+User  ->  UI  : 6. Указывает выходной вес (кг)\nи дату формирования партии
+UI    ->  VM  : onOutputKgChanged(outputKg)
+activate VM
+VM    ->  VM  : 7. Пересчитывает в реальном времени:\noutputPercent = (outputKg / rawQuantityKg) × 100\noptimalPricePerKg = costPrice / outputKg
+VM    --> UI  : UiState обновлён:\noutputPercent, optimalPricePerKg
+deactivate VM
+UI    --> User : отображает рассчитанные значения
+
+User  ->  UI  : 8. (опционально) Корректирует\nоптимальную цену вручную
+
+User  ->  UI  : 9. Нажимает кнопку «Сохранить»
+UI    ->  VM  : save(\n  purchaseId, formationDate,\n  rawQuantityKg, outputKg,\n  outputPercent, costPrice,\n  optimalPricePerKg\n)
+activate VM
+
+VM    ->  VS  : 10. validate(batchData)
+activate VS
+
+alt Корректные данные
+    VS  --> VM  : ValidationResult.Success
+    deactivate VS
+
+    VM    ->  VM  : генерирует UUID,\nприсваивает порядковый номер партии\n(например, «001», «002», …)
+
+    VM    ->  CBU : 11. invoke(batch: Batch)
+    activate CBU
+    CBU   ->  BatchRepo : create(batch)
+    activate BatchRepo
+    BatchRepo ->  BatchRepo : Batch → BatchEntity\n(domain → entity mapping)
+    BatchRepo ->  BatchDAO  : insert(entity: BatchEntity)
+    activate BatchDAO
+    BatchDAO  ->  DB  : INSERT INTO batches\n(id, number, formation_date,\n purchase_id, raw_quantity_kg,\n output_kg, output_percent,\n cost_price, optimal_price_per_kg,\n status = 'ACTIVE',\n is_deleted = 0, …)
+    DB    --> BatchDAO : rowId
+    BatchDAO  --> BatchRepo : Unit
+    deactivate BatchDAO
+    BatchRepo --> CBU  : Unit
+    deactivate BatchRepo
+    CBU   --> VM   : Unit
+    deactivate CBU
+
+    VM    ->  UPU : 12. invoke(purchase.copy(\n  status = IN_BATCH\n))
+    activate UPU
+    UPU   ->  PurchaseRepo : update(purchase)
+    activate PurchaseRepo
+    PurchaseRepo  ->  PurchaseDAO : update(entity)
+    activate PurchaseDAO
+    PurchaseDAO   ->  DB  : UPDATE purchased_raws\nSET status = 'IN_BATCH'\nWHERE id = :purchaseId
+    DB    --> PurchaseDAO : Unit
+    deactivate PurchaseDAO
+    PurchaseRepo  --> UPU  : Unit
+    deactivate PurchaseRepo
+    UPU   --> VM  : Unit
+    deactivate UPU
+    note right VM
+      12. Статус закупки изменён
+      на «В партии» (IN_BATCH)
+    end note
+
+    VM    ->  Sync : 13. enqueue(batchId, purchaseId)\n(оба объекта в очередь синхронизации)
+    activate Sync
+    Sync  --> VM  : Unit
+    deactivate Sync
+
+    VM    --> UI  : 14. showSnackbar(\n  «Партия успешно сформирована»\n)\n+ StateFlow обновлён
+    deactivate VM
+    UI    --> User : 14. Сообщение об успешном\nформировании партии;\nновая партия появляется в списке
+    note right UI
+      15. Конец основного сценария
+    end note
+
+else Альтернативный сценарий: некорректные данные
+    VS    --> VM  : ValidationResult.Error(\n  поля с ошибками,\n  сообщения об ошибках\n)
+    deactivate VS
+    note right VS
+      Возможные ошибки:
+      • Закупка не выбрана
+      • Выходной вес > Входного веса
+      • Отрицательные значения
+      • Неверная дата
+    end note
+    VM    --> UI  : обновляет UiState:\nвыделяет ошибочные поля
+    deactivate VM
+    UI    --> User : выделяет ошибочные поля\n+ выводит сообщение об ошибке
+    note right UI
+      Альт. шаг 1: система выделяет
+      ошибочные поля и сообщает об ошибке
+    end note
+
+    User  ->  UI  : исправляет данные\n(Альт. шаг 2)
+    note right UI
+      Альт. шаг 3:
+      возврат к шагу 9 основного сценария
+    end note
+    UI    ->  VM  : save(исправленные данные)
+    note over VM : повторяется с шага 10\nосновного сценария
+end
+
+deactivate UI
+
+@enduml
