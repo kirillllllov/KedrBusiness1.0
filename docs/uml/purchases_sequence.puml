@@ -2,7 +2,7 @@
 
 skinparam sequenceMessageAlign center
 skinparam responseMessageBelowArrow true
-skinparam maxMessageSize 160
+skinparam maxMessageSize 180
 skinparam sequenceGroupBorderColor #888888
 skinparam sequenceGroupBackgroundColor #F9F9F9
 skinparam sequenceGroupHeaderFontStyle bold
@@ -14,159 +14,112 @@ skinparam sequenceLifeLineBorderColor #90CAF9
 skinparam noteBorderColor #FB8C00
 skinparam noteBackgroundColor #FFF8E1
 
-title Управление закупками — Диаграмма последовательности
+title Управление закупками\nВариант использования: Добавить закупку сырья
 
-actor        "Пользователь"         as User
-participant  "PurchasesTab\n(Compose UI)"        as UI
-participant  "PurchasesViewModel"   as VM
-participant  "PurchaseUseCases"     as UC
-participant  "PurchasedRawRepository\nImpl"       as Repo
-participant  "PurchasedRawDao\n(Room)"            as DAO
-database     "Room DB\n(SQLite)"                  as DB
+actor "Пользователь\n(Директор / Администратор)" as User
+participant "PurchasesTab\n(Compose UI)"           as UI
+participant "PurchasesViewModel"                   as VM
+participant "ValidationService"                    as VS
+participant "CreatePurchaseUseCase"                as UC
+participant "PurchasedRawRepository\nImpl"         as Repo
+participant "PurchasedRawDao\n(Room)"              as DAO
+database    "Room DB\n(SQLite)"                    as DB
+participant "SyncQueue\n(очередь синхронизации)"   as Sync
 
-== 1. Инициализация экрана ==
+note over User
+  Предусловие:
+  • Пользователь авторизован в системе
+  • Роль: Директор или Администратор
+end note
 
-User  ->  UI  : открывает вкладку «Закупки»
+== Основной сценарий ==
+
+User  ->  UI  : 1. Переходит в раздел «Закупки»
 activate UI
-UI    ->  VM  : init (ViewModel создаётся через AppModule)
+UI    ->  VM  : loadPurchases()
 activate VM
-VM    ->  UC  : GetAllPurchasesUseCase.invoke()
-activate UC
-UC    ->  Repo : getAll(): Flow<List<PurchasedRaw>>
-activate Repo
-Repo  ->  DAO  : getAllNotDeleted(): Flow<List<PurchasedRawEntity>>
-activate DAO
-DAO   ->  DB   : SELECT * FROM purchased_raws\nWHERE is_deleted = 0
-DB    --> DAO  : List<PurchasedRawEntity>
-DAO   --> Repo : Flow<List<PurchasedRawEntity>>
-deactivate DAO
-Repo  --> UC   : Flow<List<PurchasedRaw>>\n(entity → domain mapping)
-deactivate Repo
-UC    --> VM   : Flow<List<PurchasedRaw>>
-deactivate UC
-VM    ->  VM   : собирает Flow,\nобновляет PurchasesUiState\n(purchases, filteredPurchases)
-VM    --> UI   : StateFlow<PurchasesUiState>
+VM    --> UI  : StateFlow<PurchasesUiState>\n(список закупок)
 deactivate VM
 UI    --> User : отображает список закупок
-deactivate UI
 
-== 2. Поиск и фильтрация ==
+User  ->  UI  : 2. Нажимает кнопку «Добавить закупку»
+UI    --> User : 3. Отображает форму ввода данных\n(AddEditPurchaseDialog)
 
-User  ->  UI  : вводит текст в SearchBar\nили выбирает фильтр статуса
-activate UI
-UI    ->  VM  : onSearchChanged(query)\n/ onStatusFilterChanged(status)
+User  ->  UI  : 4. Выбирает существующего поставщика\nили вводит нового
+note right UI
+  Поля формы:
+  • Поставщик (выбор / ввод)
+  • Тип сырья
+  • Количество (кг)
+  • Стоимость закупки
+  • Цена за кг
+  • Дата закупки
+end note
+
+User  ->  UI  : 5. Указывает тип сырья, количество (кг),\nстоимость закупки, цену за кг, дату закупки
+
+User  ->  UI  : 6. (опционально) Заполняет:\nместо получения, комментарий
+
+User  ->  UI  : 7. Нажимает кнопку «Сохранить»
+UI    ->  VM  : save(\n  supplierName, type,\n  quantityKg, purchasePriceTotal,\n  pricePerKg, date,\n  location?, comment?\n)
 activate VM
-VM    ->  VM  : фильтрует список на стороне клиента\n(поставщик, тип, статус)
-VM    --> UI  : обновлённый StateFlow<PurchasesUiState>
-deactivate VM
-UI    --> User : список обновлён по фильтру
-deactivate UI
 
-== 3. Создание новой закупки ==
+VM    ->  VS  : 8. validate(purchaseData)
+activate VS
 
-User  ->  UI  : нажимает «Добавить закупку» (FAB)
-activate UI
-UI    --> User : открывает AddEditPurchaseDialog\n(пустая форма)
+alt Корректные данные
+    VS  --> VM  : ValidationResult.Success
+    deactivate VS
 
-User  ->  UI  : заполняет поля:\nтип, кол-во (кг), цена, поставщик, статус
-UI    ->  VM  : save(\n  id = null,\n  type, quantityKg,\n  purchasePriceTotal,\n  supplierName, status, …\n)
-activate VM
-VM    ->  VM  : генерирует UUID,\nприсваивает порядковый номер
-VM    ->  UC  : CreatePurchaseUseCase.invoke(purchase)
-activate UC
-UC    ->  Repo : create(purchase: PurchasedRaw)
-activate Repo
-Repo  ->  Repo : domain → entity mapping\n(PurchasedRaw → PurchasedRawEntity)
-Repo  ->  DAO  : insert(entity: PurchasedRawEntity)
-activate DAO
-DAO   ->  DB   : INSERT INTO purchased_raws (…)
-DB    --> DAO  : rowId
-DAO   --> Repo : Unit
-deactivate DAO
-Repo  --> UC   : Unit
-deactivate Repo
-UC    --> VM   : Unit
-deactivate UC
-note right VM : Room Flow автоматически эмитит\nобновлённый список
-VM    --> UI   : StateFlow обновлён\n(новая запись в списке)
-deactivate VM
-UI    --> User : диалог закрыт,\nновая закупка отображается в списке
-deactivate UI
+    VM    ->  VM  : генерирует UUID,\nприсваивает порядковый номер
 
-== 4. Редактирование закупки ==
+    VM    ->  UC  : 9. invoke(purchase: PurchasedRaw)
+    activate UC
+    UC    ->  Repo : create(purchase)
+    activate Repo
+    Repo  ->  Repo : PurchasedRaw → PurchasedRawEntity\n(domain → entity mapping)
+    Repo  ->  DAO  : insert(entity: PurchasedRawEntity)
+    activate DAO
+    DAO   ->  DB   : INSERT INTO purchased_raws\n(id, supplier_name, type,\n quantity_kg, purchase_price_total,\n price_per_kg, date,\n location, comment,\n is_deleted, …)
+    DB    --> DAO  : rowId
+    DAO   --> Repo : Unit
+    deactivate DAO
+    Repo  -> Sync  : enqueue(purchaseId)\n(запись в очередь синхронизации)
+    activate Sync
+    Sync  --> Repo : Unit
+    deactivate Sync
+    Repo  --> UC   : Unit
+    deactivate Repo
+    UC    --> VM   : Unit
+    deactivate UC
 
-User  ->  UI  : нажимает на закупку в списке
-activate UI
-UI    ->  VM  : loadPurchaseById(id)
-activate VM
-VM    ->  UC  : GetPurchaseByIdUseCase.invoke(id)
-activate UC
-UC    ->  Repo : getById(id): PurchasedRaw?
-activate Repo
-Repo  ->  DAO  : getById(id): PurchasedRawEntity?
-activate DAO
-DAO   ->  DB   : SELECT * FROM purchased_raws\nWHERE id = :id AND is_deleted = 0
-DB    --> DAO  : PurchasedRawEntity
-DAO   --> Repo : PurchasedRawEntity
-deactivate DAO
-Repo  --> UC   : PurchasedRaw (entity → domain)
-deactivate Repo
-UC    --> VM   : PurchasedRaw
-deactivate UC
-VM    --> UI   : заполняет форму\nтекущими значениями
-deactivate VM
-UI    --> User : открывает AddEditPurchaseDialog\n(заполненная форма)
+    VM    --> UI   : 10. showSnackbar(\n  «Закупка успешно добавлена»\n)\n+ StateFlow обновлён
+    deactivate VM
+    UI    --> User : 10. Сообщение об успешном\nдобавлении закупки;\nновая запись появляется в списке
+    note right UI
+      11. Конец основного сценария
+    end note
 
-User  ->  UI  : изменяет нужные поля и сохраняет
-UI    ->  VM  : save(\n  id = existingId,\n  обновлённые поля…\n)
-activate VM
-VM    ->  UC  : UpdatePurchaseUseCase.invoke(purchase)
-activate UC
-UC    ->  Repo : update(purchase: PurchasedRaw)
-activate Repo
-Repo  ->  Repo : domain → entity mapping
-Repo  ->  DAO  : update(entity: PurchasedRawEntity)
-activate DAO
-DAO   ->  DB   : UPDATE purchased_raws\nSET … WHERE id = :id
-DB    --> DAO  : Unit
-DAO   --> Repo : Unit
-deactivate DAO
-Repo  --> UC   : Unit
-deactivate Repo
-UC    --> VM   : Unit
-deactivate UC
-note right VM : Room Flow эмитит обновление
-VM    --> UI   : StateFlow обновлён
-deactivate VM
-UI    --> User : изменения отображены в списке
-deactivate UI
+else Альтернативный сценарий: некорректные данные
+    VS    --> VM  : ValidationResult.Error(\n  поля с ошибками,\n  сообщения об ошибках\n)
+    deactivate VS
+    VM    --> UI  : обновляет UiState:\nвыделяет ошибочные поля\n(отрицательное кол-во / цена,\nневерная дата и т.д.)
+    deactivate VM
+    UI    --> User : выделяет ошибочные поля\n+ выводит сообщение об ошибке
+    note right UI
+      Альт. шаг 1: система выделяет
+      ошибочные поля и сообщает об ошибке
+    end note
 
-== 5. Удаление закупки (Soft Delete) ==
+    User  ->  UI  : исправляет данные\n(Альт. шаг 2)
+    note right UI
+      Альт. шаг 3:
+      возврат к шагу 7 основного сценария
+    end note
+    UI    ->  VM  : save(исправленные данные)
+    note over VM : повторяется с шага 8\nосновного сценария
+end
 
-User  ->  UI  : свайпает запись влево\n(SwipeToDeleteBackground)
-activate UI
-UI    -> UI   : показывает подтверждение удаления
-User  ->  UI  : подтверждает удаление
-UI    ->  VM  : delete(id)
-activate VM
-VM    ->  UC  : DeletePurchaseUseCase.invoke(id)
-activate UC
-UC    ->  Repo : delete(id: String)
-activate Repo
-Repo  ->  DAO  : softDelete(id, deletedAt = Instant.now())
-activate DAO
-DAO   ->  DB   : UPDATE purchased_raws\nSET is_deleted = 1,\n    deleted_at = :timestamp\nWHERE id = :id
-DB    --> DAO  : Unit
-DAO   --> Repo : Unit
-deactivate DAO
-Repo  --> UC   : Unit
-deactivate Repo
-UC    --> VM   : Unit
-deactivate UC
-note right VM : Room Flow эмитит обновление:\nудалённая запись\nбольше не попадает в список
-VM    --> UI   : StateFlow обновлён\n(запись исчезла из списка)
-deactivate VM
-UI    --> User : запись удалена из списка\n(физически остаётся в БД)
 deactivate UI
 
 @enduml
