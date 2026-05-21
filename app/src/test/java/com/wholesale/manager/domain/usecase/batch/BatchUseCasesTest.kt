@@ -7,6 +7,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -34,7 +35,7 @@ class BatchUseCasesTest {
 
         val result = useCase()
 
-        assertEquals(items, kotlinx.coroutines.flow.first(result))
+        assertEquals(items, result.first())
     }
 
     @Test
