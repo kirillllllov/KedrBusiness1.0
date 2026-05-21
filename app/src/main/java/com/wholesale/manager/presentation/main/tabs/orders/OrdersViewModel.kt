@@ -30,8 +30,8 @@ data class OrdersUiState(
                         (dateFrom.isBlank() || o.creationDate >= dateFrom) &&
                         (dateTo.isBlank() || o.creationDate <= dateTo)
             }
-            return if (sortNewest) base.sortedByDescending { it.creationDate }
-            else base.sortedBy { it.creationDate }
+            return if (sortNewest) base.sortedByDescending { it.lastModified }
+            else base.sortedBy { it.lastModified }
         }
 
     val totalAmount: Double get() = filtered.sumOf { it.totalAmount }
@@ -79,6 +79,13 @@ class OrdersViewModel(
             val existing = _state.value.editingItem
             val now = Instant.now().toString()
             val total = quantityKg * pricePerKg
+            val batch = _state.value.batches.find { it.id == batchId } ?: return@launch
+            val currentReserved = _state.value.items
+                .filter { it.batchId == batchId && it.status != Order.STATUS_CANCELLED }
+                .filter { it.id != existing?.id }
+                .sumOf { it.quantityKg }
+            val availableKg = batch.outputKg - currentReserved
+            if (quantityKg > availableKg) return@launch
             if (existing == null) {
                 useCases.create(
                     Order(

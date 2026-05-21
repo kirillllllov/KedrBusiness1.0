@@ -140,7 +140,14 @@ fun AddEditOrderDialog(
                 AppTextField(
                     value = quantityKg,
                     onValueChange = { quantityKg = it; quantityError = false },
-                    label = "Кол-во (кг) *", isError = quantityError, errorText = "Введите число > 0",
+                    label = "Кол-во (кг) *", isError = quantityError,
+                    errorText = if (quantityError) {
+                        if (selectedBatch != null && quantityKg.toDoubleOrNull()?.let { it > availableKg } == true) {
+                            "Нельзя больше доступного остатка"
+                        } else {
+                            "Введите число > 0"
+                        }
+                    } else "Введите число > 0",
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
                 AppTextField(
@@ -182,12 +189,13 @@ fun AddEditOrderDialog(
             Button(onClick = {
                 nameError = customerName.isBlank()
                 phoneError = customerPhone.isBlank()
-                quantityError = quantityKg.toDoubleOrNull()?.let { it <= 0 } ?: true
+                val quantityValue = quantityKg.toDoubleOrNull()
+                quantityError = quantityValue?.let { it <= 0 || it > availableKg || availableKg <= 0 } ?: true
                 priceError = pricePerKg.toDoubleOrNull()?.let { it <= 0 } ?: true
                 if (!nameError && !phoneError && !quantityError && !priceError) {
                     onSave(
                         customerName, customerPhone, customerAddress.ifBlank { null },
-                        batchId, quantityKg.toDouble(), pricePerKg.toDouble(),
+                        batchId, quantityValue ?: 0.0, pricePerKg.toDouble(),
                         shipmentDate.ifBlank { null }, deliveryMethod, status
                     )
                 }
