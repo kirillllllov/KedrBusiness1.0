@@ -15,6 +15,12 @@ import java.time.Instant
 import java.util.UUID
 import kotlin.math.roundToInt
 
+data class BatchExpenseEntry(
+    val type: String,
+    val amount: Double,
+    val description: String?
+)
+
 data class BatchesUiState(
     val items: List<Batch> = emptyList(),
     val allPurchases: List<PurchasedRaw> = emptyList(),
@@ -42,9 +48,11 @@ data class BatchesUiState(
             return (maxNum + 1).toString().padStart(3, '0')
         }
 
-    fun expensesTotalForPurchase(purchaseId: String?): Double =
-        if (purchaseId == null) 0.0
-        else allExpenses.filter { it.purchaseId == purchaseId }.sumOf { it.amount }
+    fun expensesTotalForPurchases(purchaseIds: List<String>): Double =
+        allExpenses.filter { it.purchaseId != null && it.purchaseId in purchaseIds }.sumOf { it.amount }
+
+    fun expensesTotalForBatch(batchId: String): Double =
+        allExpenses.filter { it.batchId == batchId }.sumOf { it.amount }
 
     fun purchaseById(purchaseId: String?): PurchasedRaw? =
         allPurchases.find { it.id == purchaseId }
@@ -90,47 +98,72 @@ class BatchesViewModel(
 
     fun save(
         formationDate: String,
-        purchaseId: String?,
+        purchaseIds: List<String>,
         outputKg: Double,
+        gradeOnePercent: Int,
         marketPricePerPercent: Double,
-        status: String
+        status: String,
+        batchExpenses: List<BatchExpenseEntry>
     ) {
         viewModelScope.launch {
             val existing = _state.value.editingItem
             val now = Instant.now().toString()
             val st = _state.value
-            val purchase = st.purchaseById(purchaseId)
-            val n = purchase?.purchasePriceTotal ?: 0.0
-            val rawQty = purchase?.quantityKg ?: 0.0
-            val r = st.expensesTotalForPurchase(purchaseId)
-            val costPrice = n + r
+            val purchases = purchaseIds.mapNotNull { st.purchaseById(it) }
+            val n = purchases.sumOf { it.purchasePriceTotal }
+            val rawQty = purchases.sumOf { it.quantityKg }
+            val rPurchases = st.expensesTotalForPurchases(purchaseIds)
+            val rBatch = batchExpenses.sumOf { it.amount }
+            val costPrice = n + rPurchases + rBatch
             val outputPercent = if (rawQty > 0) (outputKg / rawQty * 100).roundToInt() else 0
             val pPerKg = if (outputKg > 0) costPrice / outputKg else 0.0
-            val optimalPricePerKg = if (marketPricePerPercent > 0 && outputPercent > 0)
-                pPerKg + outputPercent * marketPricePerPercent else null
+            val optimalPricePerKg = if (marketPricePerPercent > 0 && gradeOnePercent > 0)
+                pPerKg + gradeOnePercent * marketPricePerPercent else null
 
+            val batchId: String
             if (existing == null) {
+                batchId = UUID.randomUUID().toString()
                 useCases.create(
                     Batch(
-                        id = UUID.randomUUID().toString(), number = st.nextBatchNumber,
-                        formationDate = formationDate, purchaseId = purchaseId,
+                        id = batchId, number = st.nextBatchNumber,
+                        formationDate = formationDate, purchaseIds = purchaseIds,
                         rawQuantityKg = rawQty, outputKg = outputKg,
-                        outputPercent = outputPercent, costPrice = costPrice,
+                        outputPercent = outputPercent, gradeOnePercent = gradeOnePercent,
+                        costPrice = costPrice,
                         optimalPricePerKg = optimalPricePerKg, status = status, lastModified = now
                     )
                 )
             } else {
+                batchId = existing.id
                 useCases.update(
                     existing.copy(
-                        formationDate = formationDate, purchaseId = purchaseId,
+                        formationDate = formationDate, purchaseIds = purchaseIds,
                         rawQuantityKg = rawQty, outputKg = outputKg,
-                        outputPercent = outputPercent, costPrice = costPrice,
+                        outputPercent = outputPercent, gradeOnePercent = gradeOnePercent,
+                        costPrice = costPrice,
                         optimalPricePerKg = optimalPricePerKg, status = status, lastModified = now
                     )
                 )
             }
-            if (purchase != null && purchase.status != PurchasedRaw.STATUS_IN_BATCH) {
-                purchaseUseCases.update(purchase.copy(status = PurchasedRaw.STATUS_IN_BATCH, lastModified = now))
+
+            batchExpenses.forEach { entry ->
+                expenseUseCases.create(
+                    Expense(
+                        id = UUID.randomUUID().toString(),
+                        lastModified = now,
+                        type = entry.type,
+                        amount = entry.amount,
+                        date = formationDate,
+                        description = entry.description,
+                        batchId = batchId
+                    )
+                )
+            }
+
+            purchases.forEach { purchase ->
+                if (purchase.status != PurchasedRaw.STATUS_IN_BATCH) {
+                    purchaseUseCases.update(purchase.copy(status = PurchasedRaw.STATUS_IN_BATCH, lastModified = now))
+                }
             }
             dismissDialog()
         }

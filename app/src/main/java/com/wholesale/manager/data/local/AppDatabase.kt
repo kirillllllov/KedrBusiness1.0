@@ -20,7 +20,7 @@ import java.util.UUID
         ExpenseEntity::class,
         UserEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -68,6 +68,19 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE batches ADD COLUMN purchaseIdsJson TEXT NOT NULL DEFAULT '[]'")
+                db.execSQL("ALTER TABLE batches ADD COLUMN gradeOnePercent INTEGER NOT NULL DEFAULT 0")
+                db.execSQL(
+                    "UPDATE batches SET purchaseIdsJson = " +
+                            "CASE WHEN purchaseId IS NOT NULL AND purchaseId != '' " +
+                            "THEN '[\"' || purchaseId || '\"]' ELSE '[]' END"
+                )
+                db.execSQL("ALTER TABLE expenses ADD COLUMN batchId TEXT")
+            }
+        }
+
         private val DB_CREATE_CALLBACK = object : Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
@@ -93,7 +106,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "wholesale_manager.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .addCallback(DB_CREATE_CALLBACK)
                     .build().also { INSTANCE = it }
             }

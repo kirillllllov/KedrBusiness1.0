@@ -41,10 +41,10 @@ fun BatchesTab(viewModel: BatchesViewModel, userRole: String) {
             editing = state.editingItem,
             nextBatchNumber = state.nextBatchNumber,
             availablePurchases = state.allPurchases,
-            expensesForPurchase = { purchaseId -> state.expensesTotalForPurchase(purchaseId) },
+            expensesForPurchases = { ids -> state.expensesTotalForPurchases(ids) },
             onDismiss = { viewModel.dismissDialog() },
-            onSave = { formationDate, purchaseId, outputKg, marketPrice, status ->
-                viewModel.save(formationDate, purchaseId, outputKg, marketPrice, status)
+            onSave = { formationDate, purchaseIds, outputKg, gradeOnePercent, marketPrice, status, batchExpenses ->
+                viewModel.save(formationDate, purchaseIds, outputKg, gradeOnePercent, marketPrice, status, batchExpenses)
             }
         )
     }
@@ -106,8 +106,12 @@ fun BatchesTab(viewModel: BatchesViewModel, userRole: String) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(state.filtered, key = { it.id }) { item ->
-                        val linkedPurchase = state.allPurchases.find { it.id == item.purchaseId }
+                        val linkedPurchaseLabels = item.purchaseIds.mapNotNull { pid ->
+                            state.allPurchases.find { it.id == pid }?.let { "№${it.number} ${it.type}" }
+                        }
                         val remaining = state.remainingKg(item.id, item.outputKg)
+                        val purchaseExpenses = state.expensesTotalForPurchases(item.purchaseIds)
+                        val batchExpenses = state.expensesTotalForBatch(item.id)
 
                         if (Permissions.canDeleteBatch(userRole) || Permissions.canEditBatch(userRole)) {
                             val dismissState = rememberSwipeToDismissBoxState(
@@ -131,8 +135,9 @@ fun BatchesTab(viewModel: BatchesViewModel, userRole: String) {
                                 content = {
                                     BatchCard(
                                         item = item,
-                                        purchaseInfo = linkedPurchase?.let { "Закупка №${it.number} · ${it.type}" },
-                                        expensesTotal = state.expensesTotalForPurchase(item.purchaseId),
+                                        purchaseLabels = linkedPurchaseLabels,
+                                        purchaseExpensesTotal = purchaseExpenses,
+                                        batchExpensesTotal = batchExpenses,
                                         remainingKg = remaining,
                                         onClick = { if (Permissions.canEditBatch(userRole)) viewModel.showEditDialog(item) }
                                     )
@@ -141,8 +146,9 @@ fun BatchesTab(viewModel: BatchesViewModel, userRole: String) {
                         } else {
                             BatchCard(
                                 item = item,
-                                purchaseInfo = linkedPurchase?.let { "Закупка №${it.number} · ${it.type}" },
-                                expensesTotal = state.expensesTotalForPurchase(item.purchaseId),
+                                purchaseLabels = linkedPurchaseLabels,
+                                purchaseExpensesTotal = purchaseExpenses,
+                                batchExpensesTotal = batchExpenses,
                                 remainingKg = remaining,
                                 onClick = {}
                             )
@@ -157,8 +163,9 @@ fun BatchesTab(viewModel: BatchesViewModel, userRole: String) {
 @Composable
 fun BatchCard(
     item: Batch,
-    purchaseInfo: String?,
-    expensesTotal: Double,
+    purchaseLabels: List<String>,
+    purchaseExpensesTotal: Double,
+    batchExpensesTotal: Double,
     remainingKg: Double,
     onClick: () -> Unit
 ) {
@@ -174,20 +181,27 @@ fun BatchCard(
                         style = MaterialTheme.typography.titleMedium)
                     Text(item.formationDate, style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline)
-                    if (purchaseInfo != null) {
-                        Text(purchaseInfo, style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary)
+                    if (purchaseLabels.isNotEmpty()) {
+                        Text(
+                            "Закупки: ${purchaseLabels.joinToString(", ")}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
                 BatchStatusChip(item.status)
             }
             Spacer(modifier = Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 if (item.rawQuantityKg > 0) BatchInfoItem("Сырьё", "${item.rawQuantityKg} кг")
                 if (item.outputKg > 0) BatchInfoItem("Выход", "${item.outputKg} кг")
-                if (item.outputPercent > 0) BatchInfoItem("%", "${item.outputPercent}%")
+                if (item.outputPercent > 0) BatchInfoItem("Выход%", "${item.outputPercent}%")
+                if (item.gradeOnePercent > 0) BatchInfoItem("1-й сорт", "${item.gradeOnePercent}%")
                 BatchInfoItem("Себест.", "${String.format("%.0f", item.costPrice)} ₽")
-                item.optimalPricePerKg?.let { BatchInfoItem("Оптим. стоим.", "${String.format("%.0f", it)} ₽/кг") }
+                item.optimalPricePerKg?.let { BatchInfoItem("Оптим.", "${String.format("%.0f", it)} ₽/кг") }
             }
             if (item.outputKg > 0) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -207,21 +221,39 @@ fun BatchCard(
                             "${String.format("%.1f", remainingKg)} кг",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
-                            color = if (remainingKg > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                            color = if (remainingKg > 0) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.outline
                         )
                     }
                 }
             }
-            if (expensesTotal > 0) {
+            if (purchaseExpensesTotal > 0 || batchExpensesTotal > 0) {
                 Spacer(modifier = Modifier.height(6.dp))
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(modifier = Modifier.height(6.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Расходы по закупке:", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline)
-                    Text("${String.format("%.0f", expensesTotal)} ₽",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)
+                if (purchaseExpensesTotal > 0) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Расходы по закупкам:", style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline)
+                        Text("${String.format("%.0f", purchaseExpensesTotal)} ₽",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                if (batchExpensesTotal > 0) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Расходы на партию:", style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline)
+                        Text("${String.format("%.0f", batchExpensesTotal)} ₽",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)
+                    }
                 }
             }
         }

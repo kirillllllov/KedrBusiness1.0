@@ -26,12 +26,12 @@ class ExpenseRepositoryImpl(private val dao: ExpenseDao) : ExpenseRepository {
     private fun ExpenseEntity.toDomain() = Expense(
         id = id, serverId = serverId, lastModified = lastModified, isDeleted = isDeleted,
         type = type, amount = amount, date = date, description = description,
-        purchaseId = purchaseId
+        purchaseId = purchaseId, batchId = batchId
     )
 
     private fun Expense.toEntity() = ExpenseEntity(
         id = id, serverId = serverId, lastModified = lastModified, isDeleted = isDeleted,
         type = type, amount = amount, date = date, description = description,
-        batchIdsJson = "[]", purchaseId = purchaseId
+        batchIdsJson = "[]", purchaseId = purchaseId, batchId = batchId
     )
 }

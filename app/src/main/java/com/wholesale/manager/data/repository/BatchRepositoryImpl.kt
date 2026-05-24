@@ -25,19 +25,33 @@ class BatchRepositoryImpl(private val dao: BatchDao) : BatchRepository {
 
     private fun BatchEntity.toDomain() = Batch(
         id = id, serverId = serverId, number = number,
-        formationDate = formationDate, purchaseId = purchaseId,
+        formationDate = formationDate,
+        purchaseIds = purchaseIdsJson.fromIdsJson(),
         rawQuantityKg = rawQuantityKg, outputKg = outputKg,
-        outputPercent = outputPercent, costPrice = costPrice,
+        outputPercent = outputPercent, gradeOnePercent = gradeOnePercent,
+        costPrice = costPrice,
         optimalPricePerKg = optimalPricePerKg, status = status,
         lastModified = lastModified, isDeleted = isDeleted
     )
 
     private fun Batch.toEntity() = BatchEntity(
         id = id, serverId = serverId, number = number,
-        formationDate = formationDate, purchaseId = purchaseId,
+        formationDate = formationDate,
+        purchaseId = purchaseIds.firstOrNull(),
+        purchaseIdsJson = purchaseIds.toIdsJson(),
         rawQuantityKg = rawQuantityKg, outputKg = outputKg,
-        outputPercent = outputPercent, costPrice = costPrice,
+        outputPercent = outputPercent, gradeOnePercent = gradeOnePercent,
+        costPrice = costPrice,
         optimalPricePerKg = optimalPricePerKg, status = status,
         lastModified = lastModified, isDeleted = isDeleted
     )
+
+    private fun List<String>.toIdsJson(): String =
+        if (isEmpty()) "[]" else "[${joinToString(",") { "\"$it\"" }}]"
+
+    private fun String.fromIdsJson(): List<String> =
+        if (isBlank() || this == "[]") emptyList()
+        else trimStart('[').trimEnd(']').split(",")
+            .map { it.trim().trim('"') }
+            .filter { it.isNotBlank() }
 }

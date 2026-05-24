@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.wholesale.manager.domain.model.Batch
 import com.wholesale.manager.domain.model.Expense
 import com.wholesale.manager.domain.model.PurchasedRaw
 import com.wholesale.manager.presentation.common.AppTextField
@@ -23,12 +24,22 @@ private const val CUSTOM_TYPE_KEY = "__CUSTOM__"
 fun AddEditExpenseDialog(
     editing: Expense?,
     availablePurchases: List<PurchasedRaw>,
+    availableBatches: List<Batch>,
     onDismiss: () -> Unit,
-    onSave: (type: String, amount: Double, date: String, description: String?, purchaseId: String?) -> Unit
+    onSave: (
+        type: String,
+        amount: Double,
+        date: String,
+        description: String?,
+        purchaseId: String?,
+        batchId: String?
+    ) -> Unit
 ) {
     val today = LocalDate.now().toString()
     val predefinedTypes = listOf(
         Expense.TYPE_TRANSPORT to "Транспорт",
+        Expense.TYPE_PROCESSING to "Переработка",
+        Expense.TYPE_STORAGE to "Хранение",
         Expense.TYPE_SALARY to "Зарплата / Грузчики",
         Expense.TYPE_UTILITY to "Электроэнергия",
         Expense.TYPE_EQUIPMENT to "Тех. обслуживание / Оборудование",
@@ -51,8 +62,22 @@ fun AddEditExpenseDialog(
     var amount by remember { mutableStateOf(editing?.amount?.toString() ?: "") }
     var date by remember { mutableStateOf(editing?.date ?: today) }
     var description by remember { mutableStateOf(editing?.description ?: "") }
+
     var selectedPurchaseId by remember { mutableStateOf(editing?.purchaseId ?: "") }
     var purchaseDropdownExpanded by remember { mutableStateOf(false) }
+
+    var selectedBatchId by remember { mutableStateOf(editing?.batchId ?: "") }
+    var batchDropdownExpanded by remember { mutableStateOf(false) }
+
+    var linkMode by remember {
+        mutableStateOf(
+            when {
+                editing?.batchId != null -> "batch"
+                editing?.purchaseId != null -> "purchase"
+                else -> "none"
+            }
+        )
+    }
 
     var amountError by remember { mutableStateOf(false) }
     var dateError by remember { mutableStateOf(false) }
@@ -124,45 +149,124 @@ fun AddEditExpenseDialog(
                     label = "Описание (опц.)", maxLines = 3
                 )
 
-                ExposedDropdownMenuBox(
-                    expanded = purchaseDropdownExpanded,
-                    onExpandedChange = { purchaseDropdownExpanded = it }
-                ) {
-                    val selectedPurchase = availablePurchases.find { it.id == selectedPurchaseId }
-                    val purchaseDisplay = selectedPurchase?.let {
-                        "Закупка №${it.number} · ${it.type} · ${it.purchaseDate}"
-                    } ?: if (selectedPurchaseId.isBlank()) "Не выбрана" else selectedPurchaseId
+                HorizontalDivider()
+                Text(
+                    "Привязать расход к:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
 
-                    OutlinedTextField(
-                        value = purchaseDisplay,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Привязать к закупке (опц.)") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = purchaseDropdownExpanded) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = purchaseDropdownExpanded,
-                        onDismissRequest = { purchaseDropdownExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Не выбрана") },
-                            onClick = { selectedPurchaseId = ""; purchaseDropdownExpanded = false }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(
+                        "none" to "Без привязки",
+                        "purchase" to "Закупке",
+                        "batch" to "Партии"
+                    ).forEach { (mode, label) ->
+                        FilterChip(
+                            selected = linkMode == mode,
+                            onClick = {
+                                linkMode = mode
+                                if (mode != "purchase") selectedPurchaseId = ""
+                                if (mode != "batch") selectedBatchId = ""
+                            },
+                            label = { Text(label) }
                         )
-                        availablePurchases.forEach { p ->
-                            DropdownMenuItem(
-                                text = {
-                                    Column {
-                                        Text("Закупка №${p.number} · ${p.type}",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Medium)
-                                        Text("${p.supplierName} · ${p.quantityKg} кг · ${p.purchaseDate}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.outline)
+                    }
+                }
+
+                if (linkMode == "purchase") {
+                    ExposedDropdownMenuBox(
+                        expanded = purchaseDropdownExpanded,
+                        onExpandedChange = { purchaseDropdownExpanded = it }
+                    ) {
+                        val selectedPurchase = availablePurchases.find { it.id == selectedPurchaseId }
+                        val purchaseDisplay = selectedPurchase?.let {
+                            "Закупка №${it.number} · ${it.type} · ${it.purchaseDate}"
+                        } ?: "Выберите закупку"
+
+                        OutlinedTextField(
+                            value = purchaseDisplay,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Закупка") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = purchaseDropdownExpanded) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = purchaseDropdownExpanded,
+                            onDismissRequest = { purchaseDropdownExpanded = false }
+                        ) {
+                            availablePurchases.forEach { p ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(
+                                                "Закупка №${p.number} · ${p.type}",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                "${p.supplierName} · ${p.quantityKg} кг · ${p.purchaseDate}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.outline
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        selectedPurchaseId = p.id
+                                        purchaseDropdownExpanded = false
                                     }
-                                },
-                                onClick = { selectedPurchaseId = p.id; purchaseDropdownExpanded = false }
-                            )
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (linkMode == "batch") {
+                    ExposedDropdownMenuBox(
+                        expanded = batchDropdownExpanded,
+                        onExpandedChange = { batchDropdownExpanded = it }
+                    ) {
+                        val selectedBatch = availableBatches.find { it.id == selectedBatchId }
+                        val batchDisplay = selectedBatch?.let {
+                            "Партия №${it.number} · ${it.formationDate}"
+                        } ?: "Выберите партию"
+
+                        OutlinedTextField(
+                            value = batchDisplay,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Партия") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = batchDropdownExpanded) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = batchDropdownExpanded,
+                            onDismissRequest = { batchDropdownExpanded = false }
+                        ) {
+                            availableBatches.forEach { b ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(
+                                                "Партия №${b.number}",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                "${b.formationDate} · ${b.outputKg} кг · ${String.format("%.0f", b.costPrice)} ₽",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.outline
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        selectedBatchId = b.id
+                                        batchDropdownExpanded = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -175,8 +279,10 @@ fun AddEditExpenseDialog(
                 customTypeError = selectedTypeKey == CUSTOM_TYPE_KEY && customTypeText.isBlank()
                 if (!amountError && !dateError && !customTypeError) {
                     val finalType = if (selectedTypeKey == CUSTOM_TYPE_KEY) customTypeText else selectedTypeKey
+                    val finalPurchaseId = if (linkMode == "purchase") selectedPurchaseId.ifBlank { null } else null
+                    val finalBatchId = if (linkMode == "batch") selectedBatchId.ifBlank { null } else null
                     onSave(finalType, amount.toDouble(), date, description.ifBlank { null },
-                        selectedPurchaseId.ifBlank { null })
+                        finalPurchaseId, finalBatchId)
                 }
             }) { Text("Сохранить") }
         },

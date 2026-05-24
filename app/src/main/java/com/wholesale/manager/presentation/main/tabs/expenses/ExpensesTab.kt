@@ -40,9 +40,10 @@ fun ExpensesTab(viewModel: ExpensesViewModel, userRole: String) {
         AddEditExpenseDialog(
             editing = state.editingItem,
             availablePurchases = state.purchases,
+            availableBatches = state.batches,
             onDismiss = { viewModel.dismissDialog() },
-            onSave = { type, amount, date, description, purchaseId ->
-                viewModel.save(type, amount, date, description, purchaseId)
+            onSave = { type, amount, date, description, purchaseId, batchId ->
+                viewModel.save(type, amount, date, description, purchaseId, batchId)
             }
         )
     }
@@ -102,6 +103,8 @@ fun ExpensesTab(viewModel: ExpensesViewModel, userRole: String) {
                 options = listOf(
                     "" to "Все",
                     Expense.TYPE_TRANSPORT to "Транспорт",
+                    Expense.TYPE_PROCESSING to "Переработка",
+                    Expense.TYPE_STORAGE to "Хранение",
                     Expense.TYPE_SALARY to "Зарплата",
                     Expense.TYPE_UTILITY to "Коммунальные",
                     Expense.TYPE_EQUIPMENT to "Оборудование",
@@ -126,6 +129,7 @@ fun ExpensesTab(viewModel: ExpensesViewModel, userRole: String) {
                 ) {
                     items(state.filtered, key = { it.id }) { item ->
                         val linkedPurchase = state.purchases.find { it.id == item.purchaseId }
+                        val linkedBatch = state.batches.find { it.id == item.batchId }
                         if (Permissions.canDeleteExpense(userRole) || Permissions.canEditExpense(userRole)) {
                             val dismissState = rememberSwipeToDismissBoxState(
                                 confirmValueChange = { value ->
@@ -149,6 +153,7 @@ fun ExpensesTab(viewModel: ExpensesViewModel, userRole: String) {
                                     ExpenseCard(
                                         item = item,
                                         purchaseLabel = linkedPurchase?.let { "Закупка №${it.number} · ${it.type}" },
+                                        batchLabel = linkedBatch?.let { "Партия №${it.number}" },
                                         onClick = { if (Permissions.canEditExpense(userRole)) viewModel.showEditDialog(item) }
                                     )
                                 }
@@ -157,6 +162,7 @@ fun ExpensesTab(viewModel: ExpensesViewModel, userRole: String) {
                             ExpenseCard(
                                 item = item,
                                 purchaseLabel = linkedPurchase?.let { "Закупка №${it.number} · ${it.type}" },
+                                batchLabel = linkedBatch?.let { "Партия №${it.number}" },
                                 onClick = {}
                             )
                         }
@@ -168,7 +174,12 @@ fun ExpensesTab(viewModel: ExpensesViewModel, userRole: String) {
 }
 
 @Composable
-fun ExpenseCard(item: Expense, purchaseLabel: String?, onClick: () -> Unit) {
+fun ExpenseCard(
+    item: Expense,
+    purchaseLabel: String?,
+    batchLabel: String?,
+    onClick: () -> Unit
+) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().animateContentSize(),
@@ -182,10 +193,15 @@ fun ExpenseCard(item: Expense, purchaseLabel: String?, onClick: () -> Unit) {
                     Text(it, style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
                 }
-                Text(item.date, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                Text(item.date, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline)
                 if (purchaseLabel != null) {
                     Text(purchaseLabel, style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary)
+                }
+                if (batchLabel != null) {
+                    Text(batchLabel, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary)
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
@@ -198,6 +214,8 @@ fun ExpenseCard(item: Expense, purchaseLabel: String?, onClick: () -> Unit) {
 
 fun expenseTypeLabel(type: String) = when (type) {
     Expense.TYPE_TRANSPORT -> "Транспорт"
+    Expense.TYPE_PROCESSING -> "Переработка"
+    Expense.TYPE_STORAGE -> "Хранение"
     Expense.TYPE_SALARY -> "Зарплата"
     Expense.TYPE_UTILITY -> "Коммунальные"
     Expense.TYPE_EQUIPMENT -> "Оборудование"
