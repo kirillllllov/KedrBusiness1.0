@@ -4,7 +4,7 @@
             "outputFile": "com.wholesale.manager.app-mergeDebugResources-54:/values-v21/values-v21.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\kopte\\.gradle\\caches\\transforms-4\\2976ef9f638179603adeec09d11ef7d6\\transformed\\core-1.13.1\\res\\values-v21\\values-v21.xml",
+                    "source": "C:\\Users\\kopte\\.gradle\\caches\\transforms-4\\faf6f70e0f2d6fe1209b7fcf00b3a17b\\transformed\\core-1.13.1\\res\\values-v21\\values-v21.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,13",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4",

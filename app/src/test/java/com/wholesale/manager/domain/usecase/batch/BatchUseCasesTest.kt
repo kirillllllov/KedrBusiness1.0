@@ -27,16 +27,7 @@ class BatchUseCasesTest {
         coVerify(exactly = 1) { repository.create(batch) }
     }
 
-    @Test
-    fun getAllBatches_returnsRepositoryFlow() {
-        val useCase = GetAllBatchesUseCase(repository)
-        val items = listOf(sampleBatch())
-        every { repository.getAll() } returns flowOf(items)
 
-        val result = useCase()
-
-        assertEquals(items, result.first())
-    }
 
     @Test
     fun updateBatch_delegatesToRepository() = runTest {

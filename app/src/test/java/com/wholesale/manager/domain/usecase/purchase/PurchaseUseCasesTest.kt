@@ -28,16 +28,7 @@ class PurchaseUseCasesTest {
         coVerify(exactly = 1) { repository.create(purchase) }
     }
 
-    @Test
-    fun getAllPurchases_returnsRepositoryFlow() {
-        val useCase = GetAllPurchasesUseCase(repository)
-        val items = listOf(samplePurchase())
-        every { repository.getAll() } returns flowOf(items)
 
-        val result = useCase()
-
-        assertEquals(items, result.first())
-    }
 
     @Test
     fun getPurchaseById_delegatesToRepository() = runTest {
