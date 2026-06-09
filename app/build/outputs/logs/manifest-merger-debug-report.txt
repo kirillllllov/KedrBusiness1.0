@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:2:1-21:12
-INJECTED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:2:1-21:12
-INJECTED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:2:1-21:12
-INJECTED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:2:1-21:12
+ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:2:1-21:12
+INJECTED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:2:1-21:12
+INJECTED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:2:1-21:12
+INJECTED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:2:1-21:12
 MERGED from [androidx.navigation:navigation-common:2.8.5] C:\Users\kopte\.gradle\caches\transforms-4\13e19a1a9cc864a7f6612112a8a33401\transformed\navigation-common-2.8.5\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.navigation:navigation-runtime:2.8.5] C:\Users\kopte\.gradle\caches\transforms-4\989ab2044949b5f0f570bed732ff73ed\transformed\navigation-runtime-2.8.5\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.navigation:navigation-common-ktx:2.8.5] C:\Users\kopte\.gradle\caches\transforms-4\e299b254922b88b6aaf4caeca3709fb8\transformed\navigation-common-ktx-2.8.5\AndroidManifest.xml:2:1-7:12
@@ -61,16 +61,16 @@ MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\kopte\.g
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\kopte\.gradle\caches\transforms-4\bf74d8b06829de99df97035c0073cfa0\transformed\startup-runtime-1.1.1\AndroidManifest.xml:17:1-33:12
 MERGED from [androidx.tracing:tracing:1.0.0] C:\Users\kopte\.gradle\caches\transforms-4\f07cd1e8204985f5cf4e7ffbb16f3901\transformed\tracing-1.0.0\AndroidManifest.xml:17:1-24:12
 	package
-		INJECTED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml
 	android:versionName
-		INJECTED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml
 	android:versionCode
-		INJECTED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml
 	xmlns:android
-		ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:2:11-69
+		ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:2:11-69
 application
-ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:4:5-19:19
-INJECTED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:4:5-19:19
+ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:4:5-19:19
+INJECTED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:4:5-19:19
 MERGED from [androidx.emoji2:emoji2:1.3.0] C:\Users\kopte\.gradle\caches\transforms-4\1a0fb89d76eb920216e5b3bad5058c99\transformed\emoji2-1.3.0\AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.emoji2:emoji2:1.3.0] C:\Users\kopte\.gradle\caches\transforms-4\1a0fb89d76eb920216e5b3bad5058c99\transformed\emoji2-1.3.0\AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\kopte\.gradle\caches\transforms-4\0b170ec52750fa68479d238e8f941ca2\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:23:5-33:19
@@ -88,41 +88,41 @@ MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\kopte\.g
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\kopte\.gradle\caches\transforms-4\bf74d8b06829de99df97035c0073cfa0\transformed\startup-runtime-1.1.1\AndroidManifest.xml:25:5-31:19
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\kopte\.gradle\caches\transforms-4\bf74d8b06829de99df97035c0073cfa0\transformed\startup-runtime-1.1.1\AndroidManifest.xml:25:5-31:19
 	android:extractNativeLibs
-		INJECTED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.13.1] C:\Users\kopte\.gradle\caches\transforms-4\faf6f70e0f2d6fe1209b7fcf00b3a17b\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
 	android:supportsRtl
-		ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:8:9-35
+		ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:8:9-35
 	android:label
-		ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:7:9-41
+		ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:7:9-41
 	android:allowBackup
-		ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:6:9-35
+		ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:6:9-35
 	android:theme
-		ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:9:9-54
+		ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:9:9-54
 	android:name
-		ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:5:9-37
+		ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:5:9-37
 activity#com.wholesale.manager.MainActivity
-ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:10:9-18:20
+ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:10:9-18:20
 	android:exported
-		ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:12:13-36
+		ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:12:13-36
 	android:theme
-		ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:13:13-58
+		ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:13:13-58
 	android:name
-		ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:11:13-41
+		ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:11:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:14:13-17:29
+ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:14:13-17:29
 action#android.intent.action.MAIN
-ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:15:17-69
+ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:15:17-69
 	android:name
-		ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:15:25-66
+		ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:15:25-66
 category#android.intent.category.LAUNCHER
-ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:16:17-77
+ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:16:17-77
 	android:name
-		ADDED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml:16:27-74
+		ADDED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml:16:27-74
 uses-sdk
-INJECTED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
-INJECTED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml
-INJECTED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml
+INJECTED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml
+INJECTED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml
 MERGED from [androidx.navigation:navigation-common:2.8.5] C:\Users\kopte\.gradle\caches\transforms-4\13e19a1a9cc864a7f6612112a8a33401\transformed\navigation-common-2.8.5\AndroidManifest.xml:20:5-44
 MERGED from [androidx.navigation:navigation-common:2.8.5] C:\Users\kopte\.gradle\caches\transforms-4\13e19a1a9cc864a7f6612112a8a33401\transformed\navigation-common-2.8.5\AndroidManifest.xml:20:5-44
 MERGED from [androidx.navigation:navigation-runtime:2.8.5] C:\Users\kopte\.gradle\caches\transforms-4\989ab2044949b5f0f570bed732ff73ed\transformed\navigation-runtime-2.8.5\AndroidManifest.xml:20:5-44
@@ -236,9 +236,9 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\kopte\.gradle\cach
 MERGED from [androidx.tracing:tracing:1.0.0] C:\Users\kopte\.gradle\caches\transforms-4\f07cd1e8204985f5cf4e7ffbb16f3901\transformed\tracing-1.0.0\AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.tracing:tracing:1.0.0] C:\Users\kopte\.gradle\caches\transforms-4\f07cd1e8204985f5cf4e7ffbb16f3901\transformed\tracing-1.0.0\AndroidManifest.xml:20:5-22:41
 	android:targetSdkVersion
-		INJECTED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml
 	android:minSdkVersion
-		INJECTED from C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\AndroidManifest.xml
 provider#androidx.startup.InitializationProvider
 ADDED from [androidx.emoji2:emoji2:1.3.0] C:\Users\kopte\.gradle\caches\transforms-4\1a0fb89d76eb920216e5b3bad5058c99\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
 MERGED from [androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\kopte\.gradle\caches\transforms-4\0b170ec52750fa68479d238e8f941ca2\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:24:9-32:20

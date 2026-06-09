@@ -4,6 +4,23 @@
             "outputFile": "com.wholesale.manager.app-mergeDebugResources-54:/values/values.xml",
             "map": [
                 {
+                    "source": "C:\\Users\\kopte\\Desktop\\KedrBusiness106\\app\\src\\main\\res\\values\\themes.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "93",
+                        "endOffsets": "144"
+                    },
+                    "to": {
+                        "startLines": "226",
+                        "startColumns": "4",
+                        "startOffsets": "14468",
+                        "endColumns": "92",
+                        "endOffsets": "14556"
+                    }
+                },
+                {
                     "source": "C:\\Users\\kopte\\.gradle\\caches\\transforms-4\\13e19a1a9cc864a7f6612112a8a33401\\transformed\\navigation-common-2.8.5\\res\\values\\values.xml",
                     "from": {
                         "startLines": "2,15,21,27,30",
@@ -78,23 +95,6 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\kopte\\Desktop\\KedrBusiness105\\app\\src\\main\\res\\values\\strings.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "54",
-                        "endOffsets": "105"
-                    },
-                    "to": {
-                        "startLines": "102",
-                        "startColumns": "4",
-                        "startOffsets": "6212",
-                        "endColumns": "54",
-                        "endOffsets": "6262"
-                    }
-                },
-                {
                     "source": "C:\\Users\\kopte\\.gradle\\caches\\transforms-4\\47fb532ff957d6773575abc23eea7cfd\\transformed\\foundation-release\\res\\values\\values.xml",
                     "from": {
                         "startLines": "2,3",
@@ -112,23 +112,6 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\kopte\\Desktop\\KedrBusiness105\\app\\src\\main\\res\\values\\themes.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "93",
-                        "endOffsets": "144"
-                    },
-                    "to": {
-                        "startLines": "226",
-                        "startColumns": "4",
-                        "startOffsets": "14468",
-                        "endColumns": "92",
-                        "endOffsets": "14556"
-                    }
-                },
-                {
                     "source": "C:\\Users\\kopte\\.gradle\\caches\\transforms-4\\614591743f5c0757602ecc5dd9ec3fa9\\transformed\\activity-1.9.3\\res\\values\\values.xml",
                     "from": {
                         "startLines": "2,3",
@@ -143,6 +126,23 @@
                         "startOffsets": "4825,5769",
                         "endColumns": "41,59",
                         "endOffsets": "4862,5824"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\kopte\\Desktop\\KedrBusiness106\\app\\src\\main\\res\\values\\strings.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "54",
+                        "endOffsets": "105"
+                    },
+                    "to": {
+                        "startLines": "102",
+                        "startColumns": "4",
+                        "startOffsets": "6212",
+                        "endColumns": "54",
+                        "endOffsets": "6262"
                     }
                 },
                 {

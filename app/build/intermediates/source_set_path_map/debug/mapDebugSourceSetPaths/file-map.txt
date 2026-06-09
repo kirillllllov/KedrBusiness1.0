@@ -50,10 +50,10 @@ com.wholesale.manager.app-ui-graphics-release-48 C:\Users\kopte\.gradle\caches\t
 com.wholesale.manager.app-core-ktx-1.13.1-49 C:\Users\kopte\.gradle\caches\transforms-4\fa55a96011a08a644c4ee67a9b38be88\transformed\core-ktx-1.13.1\res
 com.wholesale.manager.app-core-1.13.1-50 C:\Users\kopte\.gradle\caches\transforms-4\faf6f70e0f2d6fe1209b7fcf00b3a17b\transformed\core-1.13.1\res
 com.wholesale.manager.app-savedstate-ktx-1.2.1-51 C:\Users\kopte\.gradle\caches\transforms-4\fd6ecfc31d93a86fdee231bc1de1ed3b\transformed\savedstate-ktx-1.2.1\res
-com.wholesale.manager.app-pngs-52 C:\Users\kopte\Desktop\KedrBusiness105\app\build\generated\res\pngs\debug
-com.wholesale.manager.app-resValues-53 C:\Users\kopte\Desktop\KedrBusiness105\app\build\generated\res\resValues\debug
-com.wholesale.manager.app-packageDebugResources-54 C:\Users\kopte\Desktop\KedrBusiness105\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
-com.wholesale.manager.app-packageDebugResources-55 C:\Users\kopte\Desktop\KedrBusiness105\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
-com.wholesale.manager.app-debug-56 C:\Users\kopte\Desktop\KedrBusiness105\app\build\intermediates\merged_res\debug\mergeDebugResources
-com.wholesale.manager.app-debug-57 C:\Users\kopte\Desktop\KedrBusiness105\app\src\debug\res
-com.wholesale.manager.app-main-58 C:\Users\kopte\Desktop\KedrBusiness105\app\src\main\res
+com.wholesale.manager.app-pngs-52 C:\Users\kopte\Desktop\KedrBusiness106\app\build\generated\res\pngs\debug
+com.wholesale.manager.app-resValues-53 C:\Users\kopte\Desktop\KedrBusiness106\app\build\generated\res\resValues\debug
+com.wholesale.manager.app-packageDebugResources-54 C:\Users\kopte\Desktop\KedrBusiness106\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.wholesale.manager.app-packageDebugResources-55 C:\Users\kopte\Desktop\KedrBusiness106\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.wholesale.manager.app-debug-56 C:\Users\kopte\Desktop\KedrBusiness106\app\build\intermediates\merged_res\debug\mergeDebugResources
+com.wholesale.manager.app-debug-57 C:\Users\kopte\Desktop\KedrBusiness106\app\src\debug\res
+com.wholesale.manager.app-main-58 C:\Users\kopte\Desktop\KedrBusiness106\app\src\main\res
